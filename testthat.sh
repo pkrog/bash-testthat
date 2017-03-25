@@ -1,4 +1,5 @@
 #!/bin/bash
+# vi: fdm=marker
 
 # Constants {{{1
 ################################################################
@@ -239,6 +240,7 @@ function csv_get_col_names {
 	echo $cols
 }
 
+
 # Get number of rows {{{1
 ################################################################
 
@@ -438,13 +440,38 @@ function expect_file_exists {
 function expect_same_files {
 
 	local file1=$1
-	local file1=$2
+	local file2=$2
 
 	if ! diff -q $file1 $file2 ; then
 		print_call_stack >&2
 		echo "Files \"$file1\" and \"$file2\" differ." >&2
 		return 1
 	fi
+
+	echo -n .
+}
+
+# CSV expect not has columns {{{1
+################################################################
+
+function csv_expect_not_has_columns {
+
+	local file=$1
+	local sep=$2
+	local expected_cols=$3
+
+	# Get columns
+	cols=$(csv_get_col_names $file $sep 0 1)
+
+	# Loop on all expected columns
+	for c in $expected_cols ; do
+		if [[ " $cols " == *" $c "* || " $cols " == *" \"$c\" "* ]] ; then
+			print_call_stack >&2
+			echo "Column \"$c\" has been found inside columns of file \"$file\"." >&2
+			echo "Columns of file \"$file\" are: $cols." >&2
+			return 1
+		fi
+	done
 
 	echo -n .
 }
@@ -491,10 +518,10 @@ function expect_same_number_of_rows {
 	echo -n .
 }
 
-# CSV expect identical columns {{{1
+# CSV expect identical column values {{{1
 ################################################################
 
-function csv_expect_identical_cols {
+function csv_expect_identical_col_values {
 
 	local col=$1
 	local file1=$2
@@ -508,7 +535,36 @@ function csv_expect_identical_cols {
 	ncols_file1=$(csv_get_nb_cols $file1 $sep)
 	((col2 = col2 + ncols_file1))
 	ident=$(paste $file1 $file2 | awk 'BEGIN{FS="'$sep'";eq=1}{if ($'$col1' != $'$col2') {eq=0}}END{print eq}')
-	expect_num_ne $ident 1 "Files \"$file1\" and \"$file2\" do not have the same values in column \"$col\"."
+	if [[ $ident -ne 1 ]] ; then
+		print_call_stack >&2
+		echo "Files \"$file1\" and \"$file2\" do not have the same values in column \"$col\"." >&2
+		return 1
+	fi
+}
+
+# CSV expect same col_names {{{1
+################################################################
+
+function csv_expect_same_col_names {
+
+	local file1=$1
+	local file2=$2
+	local sep=$3
+	local nbcols=$4
+	local remove_quotes=$5
+
+	cols1=$(csv_get_col_names $file1 $sep $nbcols $remove_quotes)
+	cols2=$(csv_get_col_names $file2 $sep $nbcols $remove_quotes)
+	if [[ $cols1 != $cols2 ]] ; then
+		print_call_stack >&2
+		echo "Column names of files \"$file1\" and \"$file2\" are different." >&2
+		[[ -n $nbcols ]] && echo "Comparison on the first $nbcols columns only." >&2
+		echo "Columns of file \"$file1\" are: $cols1." >&2
+		echo "Columns of file \"$file2\" are: $cols2." >&2
+		return 1
+	fi
+
+	echo -n .
 }
 
 # CSV expect float column equals {{{1
