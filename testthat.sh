@@ -5,7 +5,7 @@
 ################################################################
 
 PROGNAME=$(basename $0)
-VERSION=1.0.0
+VERSION=1.1.0
 
 # Global variables {{{1
 ################################################################
@@ -318,6 +318,7 @@ function expect_failure {
 function expect_str_null {
 
 	local v=$1
+	local msg="$2"
 
 	if [[ -z $v ]] ; then
 		print_call_stack >&2
@@ -335,11 +336,30 @@ function expect_str_eq {
 
 	local a=$1
 	local b=$2
-	local msg="$*"
+	local msg="$3"
 
 	if [[ $a != $b ]] ; then
 		print_call_stack >&2
 		echo "\"$a\" == \"$b\" not true ! $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect string regexp {{{1
+################################################################
+
+function expect_str_re {
+
+	local str="$1"
+	local re="$2"
+	local msg="$3"
+
+	local s=$(echo "$str" | grep "$re")
+	if [[ -z $s ]] ; then
+		print_call_stack >&2
+		echo "\"$str\" not matched by regular expression \"$re\" ! $msg" >&2
 		return 1
 	fi
 
