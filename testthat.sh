@@ -115,6 +115,11 @@ function test_that {
 	local params="$*"
 	local tmp_output_file=$(mktemp -t test-searchmz-output.XXXXXX)
 
+	# Filtering
+	if [[ -n $TEST_THAT_FCT && -z $(echo ",$TEST_THAT_FCT," | grep ",$test_fct,") ]] ; then
+		return 0
+	fi
+
 	# Run test
 	$test_fct $params 2>$tmp_output_file
 
