@@ -116,7 +116,7 @@ function test_that {
 	local tmp_output_file=$(mktemp -t test-searchmz-output.XXXXXX)
 
 	# Filtering
-	if [[ -n $TEST_THAT_FCT && -z $(echo ",$TEST_THAT_FCT," | grep ",$test_fct,") ]] ; then
+	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$test_fct,"* ]] ; then
 		return 0
 	fi
 
