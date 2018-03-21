@@ -1,0 +1,7 @@
+notifications:
+ email:
+  recipients:
+   - pk.roger@icloud.com
+
+script:
+    - make test
