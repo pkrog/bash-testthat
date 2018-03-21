@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Test success and failure {{{1
+################################################################
+
+function test_success_failure {
+	expect_success true  || return 1
+	expect_failure false || return 2
+}
+
+# MAIN {{{1
+################################################################
+
+test_context "Testing testthat"
+
+test_that "Success and failure are detected." test_success_failure
+
+test_report
