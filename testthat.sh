@@ -378,7 +378,7 @@ function expect_num_eq {
 
 	local a=$1
 	local b=$2
-	local msg="$*"
+	local msg="$3"
 
 	if [[ ! $a -eq $b ]] ; then
 		print_call_stack >&2
@@ -396,7 +396,7 @@ function expect_num_ne {
 
 	local a=$1
 	local b=$2
-	local msg="$*"
+	local msg="$3"
 
 	if [[ ! $a -ne $b ]] ; then
 		print_call_stack >&2
@@ -414,7 +414,7 @@ function expect_num_le {
 
 	local a=$1
 	local b=$2
-	local msg="$*"
+	local msg="$3"
 
 	if [[ ! $a -le $b ]] ; then
 		print_call_stack >&2
@@ -432,7 +432,7 @@ function expect_num_gt {
 
 	local a=$1
 	local b=$2
-	local msg="$*"
+	local msg="$3"
 
 	if [[ ! $a -gt $b ]] ; then
 		print_call_stack >&2

@@ -8,11 +8,35 @@ function test_success_failure {
 	expect_failure false || return 2
 }
 
+# Test numeric testing {{{1
+################################################################
+
+function test_numeric_testing {
+	expect_failure expect_num_ne 0 0 "Message"
+	expect_failure expect_num_ne 5 5 "Message"
+	expect_success expect_num_ne 0 1 "Message"
+	
+	expect_success expect_num_eq 0 0 "Message"
+	expect_success expect_num_eq 5 5 "Message"
+	expect_failure expect_num_eq 0 1 "Message"
+
+	expect_success expect_num_le 0 0 "Message"
+	expect_success expect_num_le 0 1 "Message"
+	expect_success expect_num_le 1 10 "Message"
+	expect_success expect_num_le 10 10 "Message"
+	expect_failure expect_num_le 1 0 "Message"
+
+	expect_success expect_num_gt 1 0 "Message"
+	expect_failure expect_num_gt 0 1 "Message"
+	expect_failure expect_num_gt 0 0 "Message"
+}
+
 # MAIN {{{1
 ################################################################
 
 test_context "Testing testthat"
 
 test_that "Success and failure are detected." test_success_failure
+test_that "Numeric testing works well." test_numeric_testing
 
 test_report
