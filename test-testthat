@@ -31,6 +31,16 @@ function test_numeric_testing {
 	expect_failure expect_num_gt 0 0 "Message"
 }
 
+# Test string testing {{{1
+################################################################
+
+function test_string_testing {
+	expect_failure expect_str_null "blabla" "Message"
+	expect_success expect_str_null "" "Message"
+	expect_failure expect_str_not_null "" "Message"
+	expect_success expect_str_not_null "blabla" "Message"
+}
+
 # MAIN {{{1
 ################################################################
 
@@ -38,5 +48,6 @@ test_context "Testing testthat"
 
 test_that "Success and failure are detected." test_success_failure
 test_that "Numeric testing works well." test_numeric_testing
+test_that "String testing works well." test_string_testing
 
 test_report

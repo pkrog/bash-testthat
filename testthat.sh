@@ -325,9 +325,26 @@ function expect_str_null {
 	local v=$1
 	local msg="$2"
 
+	if [[ -n $v ]] ; then
+		print_call_stack >&2
+		echo "String \"$v\" is not null ! $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect string not null {{{1
+################################################################
+
+function expect_str_not_null {
+
+	local v=$1
+	local msg="$2"
+
 	if [[ -z $v ]] ; then
 		print_call_stack >&2
-		echo "String \"$v\" is null ! $msg" >&2
+		echo "String is null ! $msg" >&2
 		return 1
 	fi
 
