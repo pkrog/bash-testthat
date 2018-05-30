@@ -477,6 +477,23 @@ function expect_folder {
 	echo -n .
 }
 
+# Expect non empty file {{{1
+################################################################
+
+function expect_non_empty_file {
+
+	local file="$1"
+	local msg="$2"
+
+	if [[ ! -f $file || ! -s $file ]] ; then
+		print_call_stack >&2
+		echo "\"$file\" does not exist, is not a file or is empty. $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
 # Expect file {{{1
 ################################################################
 

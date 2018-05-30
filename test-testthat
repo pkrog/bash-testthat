@@ -52,6 +52,9 @@ function test_file_system_testing {
 	touch "a_file"
 	expect_success expect_file "a_file" "Message"
 	expect_success expect_file_exists "a_file" "Message"
+	expect_failure expect_non_empty_file "a_file" "Message"
+	echo "Some content" > "a_file"
+	expect_success expect_non_empty_file "a_file" "Message"
 	rm "a_file"
 
 	# Folder
