@@ -460,20 +460,41 @@ function expect_num_gt {
 	echo -n .
 }
 
-# Expect file exists {{{1
+# Expect folder {{{1
 ################################################################
 
-function expect_file_exists {
+function expect_folder {
+
+	local folder=$1
+
+	if [[ ! -d $folder ]] ; then
+		print_call_stack >&2
+		echo "\"$folder\" does not exist or is not a folder." >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect file {{{1
+################################################################
+
+function expect_file {
 
 	local file=$1
 
 	if [[ ! -f $file ]] ; then
 		print_call_stack >&2
-		echo "File \"$file\" does not exist." >&2
+		echo "\"$file\" does not exist or is not a file." >&2
 		return 1
 	fi
 
 	echo -n .
+}
+
+# Deprecated
+function expect_file_exists {
+	expect_file "$*"
 }
 
 # Expect same files {{{1
