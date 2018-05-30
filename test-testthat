@@ -73,10 +73,12 @@ function test_file_system_testing {
 	# Other files in folder
 	mkdir "a_folder"
 	touch "a_folder/a.txt"
-	touch "a_folder/a.csv"
 	expect_success expect_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_success expect_no_other_files_in "a_folder" '^.*\.txt$' "Message"
+	touch "a_folder/a.csv"
 	expect_success expect_files_in "a_folder" '^.*\.csv$' "Message"
 	expect_success expect_other_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_failure expect_no_other_files_in "a_folder" '^.*\.txt$' "Message"
 	rm -r "a_folder"
 }
 

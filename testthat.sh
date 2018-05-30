@@ -532,7 +532,36 @@ function expect_other_files_in {
 	cd "$prevdir"
 	if [[ -z $files ]] ; then
 		print_call_stack >&2
+		echo "No files, not matching \"$files_regex\", were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect no other files in {{{1
+################################################################
+
+function expect_no_other_files_in {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	cd "$folder"
+	files_matching=$(ls -1 | grep "$files_regex")
+	files_not_matching=$(ls -1 | grep -v "$files_regex")
+	cd "$prevdir"
+	if [[ -z $files_matching ]] ; then
+		print_call_stack >&2
 		echo "No files matching \"$files_regex\" were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+	if [[ -n $files_not_matching ]] ; then
+		print_call_stack >&2
+		echo "Files, not matching \"$files_regex\", were found inside folder \"$folder\". $msg" >&2
 		return 1
 	fi
 
