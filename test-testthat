@@ -45,16 +45,36 @@ function test_string_testing {
 ################################################################
 
 function test_file_system_testing {
-	expect_failure expect_file "a_file_that_does_not_exist"
-	expect_failure expect_file_exists "a_file_that_does_not_exist"
+
+	# File
+	expect_failure expect_file "a_file_that_does_not_exist" "Message"
+	expect_failure expect_file_exists "a_file_that_does_not_exist" "Message"
 	touch "a_file"
-	expect_success expect_file "a_file"
-	expect_success expect_file_exists "a_file"
+	expect_success expect_file "a_file" "Message"
+	expect_success expect_file_exists "a_file" "Message"
 	rm "a_file"
-	expect_failure expect_folder "a_folder_that_does_not_exist"
+
+	# Folder
+	expect_failure expect_folder "a_folder_that_does_not_exist" "Message"
 	mkdir "a_folder"
-	expect_success expect_folder "a_folder"
+	expect_success expect_folder "a_folder" "Message"
 	rmdir "a_folder"
+
+	# Files in folder
+	mkdir "a_folder"
+	touch "a_folder/a.txt"
+	expect_success expect_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_failure expect_files_in "a_folder" '^.*\.csv$' "Message"
+	rm -r "a_folder"
+
+	# Other files in folder
+	mkdir "a_folder"
+	touch "a_folder/a.txt"
+	touch "a_folder/a.csv"
+	expect_success expect_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_success expect_files_in "a_folder" '^.*\.csv$' "Message"
+	expect_success expect_other_files_in "a_folder" '^.*\.txt$' "Message"
+	rm -r "a_folder"
 }
 
 # MAIN {{{1

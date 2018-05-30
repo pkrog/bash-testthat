@@ -465,11 +465,12 @@ function expect_num_gt {
 
 function expect_folder {
 
-	local folder=$1
+	local folder="$1"
+	local msg="$2"
 
 	if [[ ! -d $folder ]] ; then
 		print_call_stack >&2
-		echo "\"$folder\" does not exist or is not a folder." >&2
+		echo "\"$folder\" does not exist or is not a folder. $msg" >&2
 		return 1
 	fi
 
@@ -481,11 +482,12 @@ function expect_folder {
 
 function expect_file {
 
-	local file=$1
+	local file="$1"
+	local msg="$2"
 
 	if [[ ! -f $file ]] ; then
 		print_call_stack >&2
-		echo "\"$file\" does not exist or is not a file." >&2
+		echo "\"$file\" does not exist or is not a file. $msg" >&2
 		return 1
 	fi
 
@@ -495,6 +497,52 @@ function expect_file {
 # Deprecated
 function expect_file_exists {
 	expect_file "$*"
+}
+
+# Expect other files in {{{1
+################################################################
+
+function expect_other_files_in {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	cd "$folder"
+	files=$(ls -1 | grep -v "$files_regex")
+	cd "$prevdir"
+	if [[ -z $files ]] ; then
+		print_call_stack >&2
+		echo "No files matching \"$files_regex\" were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect files in {{{1
+################################################################
+
+function expect_files_in {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	cd "$folder"
+	files=$(ls -1 | grep "$files_regex")
+	cd "$prevdir"
+	if [[ -z $files ]] ; then
+		print_call_stack >&2
+		echo "No files matching \"$files_regex\" were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
 }
 
 # Expect same files {{{1
