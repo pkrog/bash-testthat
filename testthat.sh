@@ -516,10 +516,10 @@ function expect_file_exists {
 	expect_file "$*"
 }
 
-# Expect other files in {{{1
+# Expect other files in folder {{{1
 ################################################################
 
-function expect_other_files_in {
+function expect_other_files_in_folder {
 
 	local folder="$1"
 	local files_regex="$2"
@@ -539,10 +539,39 @@ function expect_other_files_in {
 	echo -n .
 }
 
-# Expect no other files in {{{1
+# Expect no other files in tree {{{1
 ################################################################
 
-function expect_no_other_files_in {
+function expect_no_other_files_in_tree {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	cd "$folder"
+	files_matching=$(find . -type f | xargs -n 1 basename | grep "$files_regex")
+	files_not_matching=$(find . -type f | xargs -n 1 basename | grep -v "$files_regex")
+	cd "$prevdir"
+	if [[ -z $files_matching ]] ; then
+		print_call_stack >&2
+		echo "No files matching \"$files_regex\" were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+	if [[ -n $files_not_matching ]] ; then
+		print_call_stack >&2
+		echo "Files, not matching \"$files_regex\", were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect no other files in folder {{{1
+################################################################
+
+function expect_no_other_files_in_folder {
 
 	local folder="$1"
 	local files_regex="$2"
@@ -568,10 +597,10 @@ function expect_no_other_files_in {
 	echo -n .
 }
 
-# Expect files in {{{1
+# Expect files in folder {{{1
 ################################################################
 
-function expect_files_in {
+function expect_files_in_folder {
 
 	local folder="$1"
 	local files_regex="$2"

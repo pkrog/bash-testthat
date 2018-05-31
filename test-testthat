@@ -66,19 +66,27 @@ function test_file_system_testing {
 	# Files in folder
 	mkdir "a_folder"
 	touch "a_folder/a.txt"
-	expect_success expect_files_in "a_folder" '^.*\.txt$' "Message"
-	expect_failure expect_files_in "a_folder" '^.*\.csv$' "Message"
+	expect_success expect_files_in_folder "a_folder" '^.*\.txt$' "Message"
+	expect_failure expect_files_in_folder "a_folder" '^.*\.csv$' "Message"
 	rm -r "a_folder"
 
 	# Other files in folder
 	mkdir "a_folder"
 	touch "a_folder/a.txt"
-	expect_success expect_files_in "a_folder" '^.*\.txt$' "Message"
-	expect_success expect_no_other_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_success expect_files_in_folder "a_folder" '^.*\.txt$' "Message"
+	expect_success expect_no_other_files_in_folder "a_folder" '^.*\.txt$' "Message"
 	touch "a_folder/a.csv"
-	expect_success expect_files_in "a_folder" '^.*\.csv$' "Message"
-	expect_success expect_other_files_in "a_folder" '^.*\.txt$' "Message"
-	expect_failure expect_no_other_files_in "a_folder" '^.*\.txt$' "Message"
+	expect_success expect_files_in_folder "a_folder" '^.*\.csv$' "Message"
+	expect_success expect_other_files_in_folder "a_folder" '^.*\.txt$' "Message"
+	expect_failure expect_no_other_files_in_folder "a_folder" '^.*\.txt$' "Message"
+	rm -r "a_folder"
+
+	# Other files in tree
+	mkdir -p "a_folder/and_its_subfolder"
+	touch "a_folder/a.txt"
+	touch "a_folder/and_its_subfolder/another_file.tsv"
+	expect_success expect_files_in_tree "a_folder" '^.*\.t.*$' "Message"
+	expect_failure expect_files_in_tree "a_folder" '^.*\.txt$' "Message"
 	rm -r "a_folder"
 }
 
