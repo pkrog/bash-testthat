@@ -771,7 +771,7 @@ for e in ${g_totest[@]} ; do
 
 	# Folder
 	if [[ -d $e ]] ; then
-		for f in $e ; do
+		for f in $e/test-*.sh ; do
 			source $f
 		done
 	fi
@@ -779,3 +779,4 @@ for e in ${g_totest[@]} ; do
 done
 
 # Print report
+test_report
