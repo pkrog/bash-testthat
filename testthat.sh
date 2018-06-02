@@ -113,7 +113,7 @@ function test_that {
 	local test_fct=$2
 	shift 2
 	local params="$*"
-	local tmp_output_file=$(mktemp -t test-searchmz-output.XXXXXX)
+	local tmp_output_file=$(mktemp -t testthat-output.XXXXXX)
 
 	# Filtering
 	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$test_fct,"* ]] ; then
@@ -288,9 +288,9 @@ function expect_success {
 
 	local cmd="$*"
 
-	$cmd >&2
+	"$@" >&2
 
-	if [ $? -gt 0 ] ; then
+	if [[ $? -gt 0 ]] ; then
 		print_call_stack >&2
 		echo "Command \"$cmd\" failed." >&2
 		return 1
@@ -306,7 +306,7 @@ function expect_failure {
 
 	local cmd="$*"
 
-	$cmd >&2
+	"$@" >&2
 
 	if [ $? -eq 0 ] ; then
 		print_call_stack >&2
@@ -378,7 +378,7 @@ function expect_str_re {
 	local re="$2"
 	local msg="$3"
 
-	local s=$(echo "$str" | grep "$re")
+	local s=$(echo "$str" | egrep "$re")
 	if [[ -z $s ]] ; then
 		print_call_stack >&2
 		echo "\"$str\" not matched by regular expression \"$re\" ! $msg" >&2
@@ -513,7 +513,7 @@ function expect_file {
 
 # Deprecated
 function expect_file_exists {
-	expect_file "$*"
+	expect_file "$@"
 }
 
 # Expect other files in folder {{{1
@@ -528,11 +528,32 @@ function expect_other_files_in_folder {
 	# List files in folder
 	prevdir=$(pwd)
 	cd "$folder"
-	files=$(ls -1 | grep -v "$files_regex")
+	files=$(ls -1 | egrep -v "$files_regex")
 	cd "$prevdir"
 	if [[ -z $files ]] ; then
 		print_call_stack >&2
 		echo "No files, not matching \"$files_regex\", were found inside folder \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect other files in tree {{{1
+################################################################
+
+function expect_other_files_in_tree {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	files=$(find "$folder" -type f | xargs -n 1 basename | egrep -v "$files_regex")
+	if [[ -z $files ]] ; then
+		print_call_stack >&2
+		echo "No files, not matching \"$files_regex\", were found inside folder tree \"$tree\". $msg" >&2
 		return 1
 	fi
 
@@ -549,14 +570,11 @@ function expect_no_other_files_in_tree {
 	local msg="$3"
 
 	# List files in folder
-	prevdir=$(pwd)
-	cd "$folder"
-	files_matching=$(find . -type f | xargs -n 1 basename | grep "$files_regex")
-	files_not_matching=$(find . -type f | xargs -n 1 basename | grep -v "$files_regex")
-	cd "$prevdir"
+	files_matching=$(find "$folder" -type f | xargs -n 1 basename | egrep "$files_regex")
+	files_not_matching=$(find "$folder" -type f | xargs -n 1 basename | egrep -v "$files_regex")
 	if [[ -z $files_matching ]] ; then
 		print_call_stack >&2
-		echo "No files matching \"$files_regex\" were found inside folder \"$folder\". $msg" >&2
+		echo "No files matching \"$files_regex\" were found inside folder tree \"$folder\". $msg" >&2
 		return 1
 	fi
 	if [[ -n $files_not_matching ]] ; then
@@ -580,8 +598,8 @@ function expect_no_other_files_in_folder {
 	# List files in folder
 	prevdir=$(pwd)
 	cd "$folder"
-	files_matching=$(ls -1 | grep "$files_regex")
-	files_not_matching=$(ls -1 | grep -v "$files_regex")
+	files_matching=$(ls -1 | egrep "$files_regex")
+	files_not_matching=$(ls -1 | egrep -v "$files_regex")
 	cd "$prevdir"
 	if [[ -z $files_matching ]] ; then
 		print_call_stack >&2
@@ -597,6 +615,26 @@ function expect_no_other_files_in_folder {
 	echo -n .
 }
 
+# Expect files in tree {{{1
+################################################################
+
+function expect_files_in_tree {
+
+	local folder="$1"
+	local files_regex="$2"
+	local msg="$3"
+
+	# List files in folder
+	prevdir=$(pwd)
+	files=$(find "$folder" -type f | xargs -n 1 basename | egrep "$files_regex")
+	if [[ -z $files ]] ; then
+		print_call_stack >&2
+		echo "No files matching \"$files_regex\" were found inside folder tree \"$folder\". $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
 # Expect files in folder {{{1
 ################################################################
 
@@ -609,7 +647,7 @@ function expect_files_in_folder {
 	# List files in folder
 	prevdir=$(pwd)
 	cd "$folder"
-	files=$(ls -1 | grep "$files_regex")
+	files=$(ls -1 | egrep "$files_regex")
 	cd "$prevdir"
 	if [[ -z $files ]] ; then
 		print_call_stack >&2
