@@ -164,6 +164,19 @@ function test_report {
 	fi
 }
 
+# Output progress {{{1
+# Output the progress of a command, by taking both stdout and stderr of the
+# command and replace each line by a dot character.
+# This function is useful while some part of the test code takes much time
+# and use does not get any feedback.
+# It is also particularly essential with Travis-CI, which aborts the test
+# if no output has been seen for the last 10 minutes.
+################################################################
+
+output_progress() {
+	"$@" 2>&1 | while read line ; do echo -n . ; done
+}
+
 # Print call stack {{{1
 ################################################################
 
