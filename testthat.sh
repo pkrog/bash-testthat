@@ -11,10 +11,10 @@ YES=yes
 # Global variables {{{1
 ################################################################
 
-g_debug=0
-g_totest=
-g_nb_test_context=0
-g_err_number=0
+DEBUG=0
+TOTEST=
+NB_TEST_CONTEXT=0
+ERR_NUMBER=0
 PRINT=
 declare -a g_err_msgs=()
 declare -a g_err_output_files=()
@@ -54,7 +54,7 @@ function print_debug_msg {
 	local dbglvl=$1
 	local dbgmsg=$2
 
-	[ $g_debug -ge $dbglvl ] && echo "[g_debug] $dbgmsg" >&2
+	[ $DEBUG -ge $dbglvl ] && echo "[DEBUG] $dbgmsg" >&2
 }
 
 # Read args {{{1
@@ -67,7 +67,7 @@ function read_args {
 	# Read options
 	while true ; do
 		case $1 in
-			-g|--debug)         g_debug=$((g_debug + 1)) ;;
+			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
 			-p|--print)         PRINT=$YES ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
@@ -84,14 +84,14 @@ function read_args {
 
 	# Read remaining arguments as a list of folders and/or files
 	if [ -n "$*" ] ; then
-		g_totest=("$@")
+		TOTEST=("$@")
 	else
-		g_totest=()
+		TOTEST=()
 	fi
 
 	# Debug
 	print_debug_msg 1 "Arguments are : $args"
-	print_debug_msg 1 "Folders and files to test are : $g_totest"
+	print_debug_msg 1 "Folders and files to test are : $TOTEST"
 }
 
 # Test context {{{1
@@ -101,11 +101,11 @@ function test_context {
 
 	local msg=$1
 
-	[[ $g_nb_test_context -gt 0 ]] && echo
+	[[ $NB_TEST_CONTEXT -gt 0 ]] && echo
 
 	echo -n "$msg "
 
-	((g_nb_test_context=g_nb_test_context+1))
+	((NB_TEST_CONTEXT=NB_TEST_CONTEXT+1))
 }
 
 # Test that {{{1
@@ -134,9 +134,9 @@ function test_that {
 	# Failure
 	exit_code=$?
 	if [ $exit_code -gt 0 ] ; then
-		((g_err_number=g_err_number+1))
-		if [[ g_err_number -le 16 ]] ; then
-			printf %x $g_err_number
+		((ERR_NUMBER=ERR_NUMBER+1))
+		if [[ ERR_NUMBER -le 16 ]] ; then
+			printf %x $ERR_NUMBER
 		else
 			echo -n E
 		fi
@@ -154,14 +154,14 @@ function test_that {
 
 function test_report {
 
-	[[ $g_nb_test_context -eq 0 ]] || echo
+	[[ $NB_TEST_CONTEXT -eq 0 ]] || echo
 
-	if [[ $g_err_number -gt 0 ]] ; then
+	if [[ $ERR_NUMBER -gt 0 ]] ; then
 		echo '================================================================'
-		echo "$g_err_number error(s) encountered."
+		echo "$ERR_NUMBER error(s) encountered."
 
 		# Loop on all errors
-		for ((i = 0 ; i < g_err_number ; ++i)) ; do
+		for ((i = 0 ; i < ERR_NUMBER ; ++i)) ; do
 			echo
 			printf %x $((i+1))
 			echo . ${g_err_msgs[$i]}
@@ -848,7 +848,7 @@ function expect_no_duplicated_row {
 read_args "$@"
 
 # Loop on folders and files to test
-for e in ${g_totest[@]} ; do
+for e in ${TOTEST[@]} ; do
 
 	[[ -f $e || -d $e ]] || error "\"$e\" is neither a file nor a folder."
 
