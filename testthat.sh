@@ -6,6 +6,7 @@
 
 PROGNAME=$(basename $0)
 VERSION=1.1.0
+YES=yes
 
 # Global variables {{{1
 ################################################################
@@ -14,6 +15,7 @@ g_debug=0
 g_totest=
 g_nb_test_context=0
 g_err_number=0
+PRINT=
 declare -a g_err_msgs=()
 declare -a g_err_output_files=()
 
@@ -28,6 +30,7 @@ function print_help {
 	echo "Options:"
 	echo "   -g, --debug          Debug mode."
 	echo "   -h, --help           Print this help message."
+	echo "   -p, --print          Print live output of test functions."
 	echo "   -v, --version        Print version."
 }
 
@@ -66,6 +69,7 @@ function read_args {
 		case $1 in
 			-g|--debug)         g_debug=$((g_debug + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
+			-p|--print)         PRINT=$YES ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
 			-) error "Illegal option $1." ;;
 			--) error "Illegal option $1." ;;
@@ -121,7 +125,11 @@ function test_that {
 	fi
 
 	# Run test
-	$test_fct $params 2>$tmp_output_file
+	if [[ $PRINT == $YES ]] ; then
+		$test_fct $params 2>&1 | tee $tmp_output_file
+	else
+		$test_fct $params 2>$tmp_output_file
+	fi
 
 	# Failure
 	exit_code=$?
