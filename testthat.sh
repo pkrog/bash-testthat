@@ -26,6 +26,7 @@ function print_help {
 	echo "Usage: $PROGNAME [options] <folders or files>"
 	echo
 	echo "The folders are searched for files matching 'test-*.sh' pattern."
+	echo "You can use the environment variable TEST_THAT_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run (separated by commas)."
 	echo
 	echo "Options:"
 	echo "   -g, --debug          Debug mode."
