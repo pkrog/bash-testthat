@@ -19,6 +19,7 @@ NB_TEST_CONTEXT=0
 ERR_NUMBER=0
 PRINT=
 REPORT=$AT_THE_END
+QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
 declare -a g_err_output_files=()
 
@@ -35,6 +36,7 @@ function print_help {
 	echo "   -g, --debug         Debug mode."
 	echo "   -h, --help          Print this help message."
 	echo "   -p, --print         Print live output of test functions."
+	echo "   -q, --quit-first    Quit on first error, and stop all tests. Useful with $ON_THE_SPOT report (see -r option)."
 	echo "   -r, --report <NAME> Set the name of the reporter to use. Possible"
 	echo "                       values are: $ON_THE_SPOT (report each error as it"
 	echo "                       occurs), $AT_THE_END (report at the end of all"
@@ -79,6 +81,7 @@ function read_args {
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
 			-p|--print)         PRINT=$YES ;;
+			-q|--quit-first)    QUIT_ON_FIRST_ERROR=$YES ;;
 			-r|--report)        REPORT=$2 ; shift ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
 			-) error "Illegal option $1." ;;
@@ -185,6 +188,9 @@ function test_that {
 			g_err_msgs+=($msg)
 			g_err_output_files+=($tmp_output_file)
 		fi
+
+		# Quit on first error
+		[[ $QUIT_ON_FIRST_ERROR == $YES ]] && exit 2
 
 	# Success
 	else
