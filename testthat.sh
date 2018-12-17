@@ -269,7 +269,7 @@ function csv_count_values {
 
 	col_index=$(csv_get_col_index $file $sep $col)
 	[[ $col_index -gt 0 ]] || return 1
-	nb_values=$(awk "BEGIN{FS=\"$sep\"}{if (NR > 1 && \$$col_index != \"NA\") {++n}} AT_THE_END{print n}" $file)
+	nb_values=$(awk "BEGIN{FS=\"$sep\"}{if (NR > 1 && \$$col_index != \"NA\") {++n}} END{print n}" $file)
 
 	echo $nb_values
 }
@@ -823,7 +823,7 @@ function csv_expect_identical_col_values {
 	expect_num_gt $col2 0 "\"$file2\" does not contain column $col."
 	ncols_file1=$(csv_get_nb_cols $file1 $sep)
 	((col2 = col2 + ncols_file1))
-	ident=$(paste $file1 $file2 | awk 'BEGIN{FS="'$sep'";eq=1}{if ($'$col1' != $'$col2') {eq=0}}AT_THE_END{print eq}')
+	ident=$(paste $file1 $file2 | awk 'BEGIN{FS="'$sep'";eq=1}{if ($'$col1' != $'$col2') {eq=0}}END{print eq}')
 	if [[ $ident -ne 1 ]] ; then
 		print_call_stack >&2
 		echo "Files \"$file1\" and \"$file2\" do not have the same values in column \"$col\"." >&2
@@ -868,7 +868,7 @@ function csv_expect_float_col_equals {
 	local tol=$5
 
 	col_index=$(csv_get_col_index $file $sep $col)
-	ident=$(awk 'function abs(v) { return v < 0 ? -v : v }BEGIN{FS="'$sep'";eq=1}{if (NR > 1 && abs($'$col_index' - '$val') > '$tol') {eq=0}}AT_THE_END{print eq}' $file)
+	ident=$(awk 'function abs(v) { return v < 0 ? -v : v }BEGIN{FS="'$sep'";eq=1}{if (NR > 1 && abs($'$col_index' - '$val') > '$tol') {eq=0}}END{print eq}' $file)
 
 	[[ $ident -eq 1 ]] || return 1
 }
