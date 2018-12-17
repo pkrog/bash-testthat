@@ -36,7 +36,7 @@ function print_help {
 	echo "   -g, --debug         Debug mode."
 	echo "   -h, --help          Print this help message."
 	echo "   -p, --print         Print live output of test functions."
-	echo "   -q, --quit-first    Quit on first error, and stop all tests. Useful with $ON_THE_SPOT report (see -r option)."
+	echo "   -q, --quit-first    Quit on first error, and stop all tests."
 	echo "   -r, --report <NAME> Set the name of the reporter to use. Possible"
 	echo "                       values are: $ON_THE_SPOT (report each error as it"
 	echo "                       occurs), $AT_THE_END (report at the end of all"
@@ -133,10 +133,27 @@ print_error() {
 
 	echo
 	echo '----------------------------------------------------------------'
-	printf "%x. %s\n" $n "$msg"
+	printf "%x. " $n
+	echo "Failure while asserting that \"$msg\"."
+	echo '---'
 	cat "$output_file"
 	rm "$output_file"
 	echo '----------------------------------------------------------------'
+}
+
+# Finalize tests {{{1
+################################################################
+
+finalize_tests() {
+
+	# Print new line
+	[[ $NB_TEST_CONTEXT -eq 0 ]] || echo
+
+	# Print end report
+	[[ $REPORT == $AT_THE_END ]] && print_end_report
+
+	# Exit
+	exit $ERR_NUMBER
 }
 
 # Test that {{{1
@@ -144,8 +161,8 @@ print_error() {
 
 function test_that {
 
-	local msg=$1
-	local test_fct=$2
+	local msg="$1"
+	local test_fct="$2"
 	shift 2
 	local params="$*"
 	local tmp_output_file=$(mktemp -t testthat-output.XXXXXX)
@@ -170,14 +187,11 @@ function test_that {
 		((ERR_NUMBER=ERR_NUMBER+1))
 
 		# Print error number
-		if [[ ERR_NUMBER -le 16 ]] ; then
+		if [[ ERR_NUMBER -lt 16 ]] ; then
 			printf %x $ERR_NUMBER
 		else
 			echo -n E
 		fi
-
-		# Build error message
-		err_msg="Failure while asserting that \"$msg\"."
 
 		# Print error now
 		if [[ $REPORT == $ON_THE_SPOT ]] ; then
@@ -185,12 +199,12 @@ function test_that {
 
 		# Store error message for later
 		else
-			g_err_msgs+=($msg)
-			g_err_output_files+=($tmp_output_file)
+			g_err_msgs+=("$msg")
+			g_err_output_files+=("$tmp_output_file")
 		fi
 
 		# Quit on first error
-		[[ $QUIT_ON_FIRST_ERROR == $YES ]] && exit 2
+		[[ $QUIT_ON_FIRST_ERROR == $YES ]] && finalize_tests
 
 	# Success
 	else
@@ -198,12 +212,10 @@ function test_that {
 	fi
 }
 
-# Test report {{{1
+# Print end report {{{1
 ################################################################
 
-function test_report {
-
-	[[ $NB_TEST_CONTEXT -eq 0 ]] || echo
+function print_end_report {
 
 	if [[ $ERR_NUMBER -gt 0 ]] ; then
 		echo '================================================================'
@@ -910,5 +922,5 @@ for e in ${TOTEST[@]} ; do
 
 done
 
-# Print report
-[[ $REPORT == $AT_THE_END ]] && test_report
+# Finalize
+finalize_tests
