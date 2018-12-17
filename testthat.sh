@@ -5,8 +5,10 @@
 ################################################################
 
 PROGNAME=$(basename $0)
-VERSION=1.1.0
+VERSION=1.2.0
 YES=yes
+ON_THE_SPOT=on.the.spot
+AT_THE_END=at.the.end
 
 # Global variables {{{1
 ################################################################
@@ -16,6 +18,8 @@ TOTEST=
 NB_TEST_CONTEXT=0
 ERR_NUMBER=0
 PRINT=
+REPORT=$AT_THE_END
+QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
 declare -a g_err_output_files=()
 
@@ -29,10 +33,16 @@ function print_help {
 	echo "You can use the environment variable TEST_THAT_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run (separated by commas)."
 	echo
 	echo "Options:"
-	echo "   -g, --debug          Debug mode."
-	echo "   -h, --help           Print this help message."
-	echo "   -p, --print          Print live output of test functions."
-	echo "   -v, --version        Print version."
+	echo "   -g, --debug         Debug mode."
+	echo "   -h, --help          Print this help message."
+	echo "   -p, --print         Print live output of test functions."
+	echo "   -q, --quit-first    Quit on first error, and stop all tests. Useful with $ON_THE_SPOT report (see -r option)."
+	echo "   -r, --report <NAME> Set the name of the reporter to use. Possible"
+	echo "                       values are: $ON_THE_SPOT (report each error as it"
+	echo "                       occurs), $AT_THE_END (report at the end of all"
+	echo "                       tests)."
+	echo "                       Default is $AT_THE_END."
+	echo "   -v, --version       Print version."
 }
 
 # Error {{{1
@@ -71,6 +81,8 @@ function read_args {
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
 			-p|--print)         PRINT=$YES ;;
+			-q|--quit-first)    QUIT_ON_FIRST_ERROR=$YES ;;
+			-r|--report)        REPORT=$2 ; shift ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
 			-) error "Illegal option $1." ;;
 			--) error "Illegal option $1." ;;
@@ -81,7 +93,6 @@ function read_args {
 		esac
 		shift
 	done
-	shift $((OPTIND - 1))
 
 	# Read remaining arguments as a list of folders and/or files
 	if [ -n "$*" ] ; then
@@ -89,6 +100,9 @@ function read_args {
 	else
 		TOTEST=()
 	fi
+
+	# Check reporter
+	[[ $REPORT == $AT_THE_END || $REPORT == $ON_THE_SPOT ]] || error "Unknown reporter $REPORT."
 
 	# Debug
 	print_debug_msg 1 "Arguments are : $args"
@@ -107,6 +121,22 @@ function test_context {
 	echo -n "$msg "
 
 	((NB_TEST_CONTEXT=NB_TEST_CONTEXT+1))
+}
+
+# Print error {{{1
+################################################################
+
+print_error() {
+	n=$1
+	msg="$2"
+	output_file="$3"
+
+	echo
+	echo '----------------------------------------------------------------'
+	printf "%x. %s\n" $n "$msg"
+	cat "$output_file"
+	rm "$output_file"
+	echo '----------------------------------------------------------------'
 }
 
 # Test that {{{1
@@ -135,14 +165,32 @@ function test_that {
 	# Failure
 	exit_code=$?
 	if [ $exit_code -gt 0 ] ; then
+
+		# Increment error number
 		((ERR_NUMBER=ERR_NUMBER+1))
+
+		# Print error number
 		if [[ ERR_NUMBER -le 16 ]] ; then
 			printf %x $ERR_NUMBER
 		else
 			echo -n E
 		fi
-		g_err_msgs+=("Failure while asserting that \"$msg\".")
-		g_err_output_files+=($tmp_output_file)
+
+		# Build error message
+		err_msg="Failure while asserting that \"$msg\"."
+
+		# Print error now
+		if [[ $REPORT == $ON_THE_SPOT ]] ; then
+			print_error $ERR_NUMBER "$msg" "$tmp_output_file"
+
+		# Store error message for later
+		else
+			g_err_msgs+=($msg)
+			g_err_output_files+=($tmp_output_file)
+		fi
+
+		# Quit on first error
+		[[ $QUIT_ON_FIRST_ERROR == $YES ]] && exit 2
 
 	# Success
 	else
@@ -163,12 +211,7 @@ function test_report {
 
 		# Loop on all errors
 		for ((i = 0 ; i < ERR_NUMBER ; ++i)) ; do
-			echo
-			printf %x $((i+1))
-			echo . ${g_err_msgs[$i]}
-			cat ${g_err_output_files[$i]}
-			rm ${g_err_output_files[$i]}
-			echo '----------------------------------------------------------------'
+			print_error $((i+1)) "${g_err_msgs[$i]}" "${g_err_output_files[$i]}"
 		done
 	fi
 }
@@ -868,4 +911,4 @@ for e in ${TOTEST[@]} ; do
 done
 
 # Print report
-test_report
+[[ $REPORT == $AT_THE_END ]] && test_report
