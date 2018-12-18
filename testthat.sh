@@ -176,7 +176,7 @@ function test_that {
 	if [[ $PRINT == $YES ]] ; then
 		$test_fct $params 2>&1 | tee "$tmp_output_file"
 	else
-		$test_fct $params >"$tmp_output_file" 2>&1
+		$test_fct $params 2>"$tmp_output_file"
 	fi
 
 	# Failure
