@@ -743,7 +743,7 @@ function expect_same_files {
 	local file1=$1
 	local file2=$2
 
-	if ! diff -q $file1 $file2 ; then
+	if ! diff -q $file1 $file2 >/dev/null ; then
 		print_call_stack >&2
 		echo "Files \"$file1\" and \"$file2\" differ." >&2
 		return 1
