@@ -212,6 +212,17 @@ function test_that {
 	fi
 }
 
+# Run test file {{{1
+################################################################################
+
+function run_test_file {
+	local file="$1"
+
+	TEST_FILE=$(realpath "$file")
+	TEST_DIR=$(dirname "$TEST_FILE")
+	source "$file"
+}
+
 # Print end report {{{1
 ################################################################
 
@@ -909,14 +920,12 @@ for e in ${TOTEST[@]} ; do
 	[[ -f $e || -d $e ]] || error "\"$e\" is neither a file nor a folder."
 
 	# File
-	if [[ -f $e ]] ; then
-		source $e
-	fi
+	[[ -f $e ]] && run_test_file "$e"
 
 	# Folder
 	if [[ -d $e ]] ; then
 		for f in $e/test-*.sh ; do
-			source $f
+			run_test_file "$f"
 		done
 	fi
 
