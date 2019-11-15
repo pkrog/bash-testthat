@@ -947,9 +947,11 @@ for e in ${TOTEST[@]} ; do
 
 	# Folder
 	if [[ -d $e ]] ; then
-		ls $e/* | grep '^[^/]*/[Tt][Ee][Ss][Tt][-._].*\.sh$' | while read f ; do
+		tmp_file=$(mktemp -t $PROGNAME.XXXXXX)
+		ls $e/* | grep '^[^/]*/[Tt][Ee][Ss][Tt][-._].*\.sh$' | sort >$tmp_file
+		while read f ; do
 			[[ -f "$f" ]] && run_test_file "$f"
-		done
+		done <$tmp_file
 	fi
 
 done
