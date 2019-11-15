@@ -751,12 +751,35 @@ function expect_files_in_folder {
 
 function expect_same_files {
 
-	local file1=$1
-	local file2=$2
+	local file1="$1"
+	local file2="$2"
 
-	if ! diff -q $file1 $file2 >/dev/null ; then
+	expect_file "$file1" || return 2
+	expect_file "$file2" || return 3
+
+	if ! diff -q "$file1" "$file2" >/dev/null ; then
 		print_call_stack >&2
 		echo "Files \"$file1\" and \"$file2\" differ." >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect same folders {{{1
+################################################################
+
+function expect_same_folders {
+
+	local folder1="$1"
+	local folder2="$2"
+
+	expect_folder "$folder1" || return 2
+	expect_folder "$folder2" || return 3
+
+	if ! diff -r -q "$folder1" "$folder2" >/dev/null ; then
+		print_call_stack >&2
+		echo "Folders \"$folder1\" and \"$folder2\" differ." >&2
 		return 1
 	fi
 
@@ -924,8 +947,8 @@ for e in ${TOTEST[@]} ; do
 
 	# Folder
 	if [[ -d $e ]] ; then
-		for f in $e/test-*.sh ; do
-			run_test_file "$f"
+		ls $e/* | grep '^[^/]*/[Tt][Ee][Ss][Tt][-._].*\.sh$' | while read f ; do
+			[[ -f "$f" ]] && run_test_file "$f"
 		done
 	fi
 
