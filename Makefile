@@ -1,6 +1,10 @@
 all:
 
 test:
+	./testthat.sh test
 	./testthat.sh test-testthat
 
-.PHONY: all clean
+clean:
+	$(RM) -r test/workspace
+
+.PHONY: all clean test
