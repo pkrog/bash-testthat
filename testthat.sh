@@ -659,8 +659,8 @@ function expect_no_other_files_in_tree {
 	local msg="$3"
 
 	# List files in folder
-	files_matching=$(find "$folder" -type f | xargs -n 1 basename | egrep "$files_regex")
-	files_not_matching=$(find "$folder" -type f | xargs -n 1 basename | egrep -v "$files_regex")
+	files_matching=$(find "$folder" -type f -printf '"%p"\n' | xargs -n 1 basename | egrep "$files_regex")
+	files_not_matching=$(find "$folder" -type f -printf '"%p"\n' | xargs -n 1 basename | egrep -v "$files_regex")
 	if [[ -z $files_matching ]] ; then
 		print_call_stack >&2
 		echo "No files matching \"$files_regex\" were found inside folder tree \"$folder\". $msg" >&2
@@ -668,7 +668,7 @@ function expect_no_other_files_in_tree {
 	fi
 	if [[ -n $files_not_matching ]] ; then
 		print_call_stack >&2
-		echo "Files, not matching \"$files_regex\", were found inside folder \"$folder\". $msg" >&2
+		echo "Files, not matching \"$files_regex\", were found inside folder \"$folder\": $files_not_matching. $msg" >&2
 		return 1
 	fi
 
