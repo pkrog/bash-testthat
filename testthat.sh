@@ -21,7 +21,7 @@ PRINT=
 REPORT=$AT_THE_END
 QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
-declare -a g_err_output_files=()
+declare -a g_err_stderr_files=()
 
 # Print help {{{1
 ################################################################
@@ -74,7 +74,7 @@ function print_debug_msg {
 function read_args {
 
 	local args="$*" # save arguments for debugging purpose
-	
+
 	# Read options
 	while true ; do
 		case $1 in
@@ -136,8 +136,10 @@ print_error() {
 	printf "%x. " $n
 	echo "Failure while asserting that \"$msg\"."
 	echo '---'
-	cat "$output_file"
-	rm "$output_file"
+	if [[ -f $output_file ]] ; then
+		cat "$output_file"
+		rm "$output_file"
+	fi
 	echo '----------------------------------------------------------------'
 }
 
@@ -165,7 +167,7 @@ function test_that {
 	local test_fct="$2"
 	shift 2
 	local params="$*"
-	local tmp_output_file=$(mktemp -t testthat-output.XXXXXX)
+	local tmp_stderr_file=$(mktemp -t testthat-stderr.XXXXXX)
 
 	# Filtering
 	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$test_fct,"* ]] ; then
@@ -173,14 +175,13 @@ function test_that {
 	fi
 
 	# Run test
-	if [[ $PRINT == $YES ]] ; then
-		$test_fct $params 2>&1 | tee "$tmp_output_file"
-	else
-		$test_fct $params 2>"$tmp_output_file"
-	fi
+	$test_fct $params 2>"$tmp_stderr_file"
+	exit_code=$?
+
+	# Print stderr now
+	[[ $PRINT == $YES && -f $tmp_stderr_file ]] && cat $tmp_stderr_file
 
 	# Failure
-	exit_code=$?
 	if [ $exit_code -gt 0 ] ; then
 
 		# Increment error number
@@ -200,7 +201,7 @@ function test_that {
 		# Store error message for later
 		else
 			g_err_msgs+=("$msg")
-			g_err_output_files+=("$tmp_output_file")
+			g_err_stderr_files+=("$tmp_stderr_file")
 		fi
 
 		# Quit on first error
@@ -208,7 +209,7 @@ function test_that {
 
 	# Success
 	else
-		rm $tmp_output_file
+		rm $tmp_stderr_file
 	fi
 }
 
