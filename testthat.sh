@@ -235,7 +235,7 @@ function print_end_report {
 
 		# Loop on all errors
 		for ((i = 0 ; i < ERR_NUMBER ; ++i)) ; do
-			print_error $((i+1)) "${g_err_msgs[$i]}" "${g_err_output_files[$i]}"
+			print_error $((i+1)) "${g_err_msgs[$i]}" "${g_err_stderr_files[$i]}"
 		done
 	fi
 }
