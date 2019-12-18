@@ -373,6 +373,32 @@ function csv_get_val {
 # Expect success {{{1
 ################################################################
 
+function expect_success_after_n_tries {
+
+	local n=$1
+	shift
+	local cmd="$*"
+
+	# Try to run the command
+	for ((i = 0 ; i < n ; ++i)) ; do
+		"$@" >&2
+		err=$?
+		[[ $err == 0 ]] && break
+	done
+
+	# Failure
+	if [[ $err -gt 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed after $n tries." >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect success {{{1
+################################################################
+
 function expect_success {
 
 	local cmd="$*"
