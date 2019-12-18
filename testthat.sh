@@ -30,13 +30,14 @@ function print_help {
 	echo "Usage: $PROGNAME [options] <folders or files>"
 	echo
 	echo "The folders are searched for files matching 'test-*.sh' pattern."
-	echo "You can use the environment variable TEST_THAT_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run (separated by commas)."
+	echo "You can use the environment variables TEST_THAT_FCT and TEST_THAT_NO_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run or not run (separated by commas)."
 	echo
 	echo "Options:"
 	echo "   -g, --debug         Debug mode."
 	echo "   -h, --help          Print this help message."
 	echo "   -p, --print         Print live output of test functions."
-	echo "   -q, --quit-first    Quit on first error, and stop all tests. Useful with $ON_THE_SPOT report (see -r option)."
+	echo "   -q, --quit-first    Quit on first error, and stop all tests."
+	echo "                       Useful with $ON_THE_SPOT report (see -r option)."
 	echo "   -r, --report <NAME> Set the name of the reporter to use. Possible"
 	echo "                       values are: $ON_THE_SPOT (report each error as it"
 	echo "                       occurs), $AT_THE_END (report at the end of all"
@@ -171,6 +172,9 @@ function test_that {
 
 	# Filtering
 	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$test_fct,"* ]] ; then
+		return 0
+	fi
+	if [[ -n $TEST_THAT_NO_FCT && ",$TEST_THAT_NO_FCT," == *",$test_fct,"* ]] ; then
 		return 0
 	fi
 
