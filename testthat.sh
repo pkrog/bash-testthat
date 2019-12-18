@@ -579,6 +579,23 @@ function expect_num_gt {
 	echo -n .
 }
 
+# Expect no path {{{1
+################################################################
+
+function expect_no_path {
+
+	local path="$1"
+	local msg="$2"
+
+	if [[ -e $path ]] ; then
+		print_call_stack >&2
+		echo "\"$path\" exists. $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
 # Expect folder {{{1
 ################################################################
 
