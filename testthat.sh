@@ -453,6 +453,23 @@ function expect_str_null {
 	echo -n .
 }
 
+# Expect defined env var {{{1
+################################################################
+
+function expect_def_env_var {
+
+	local varname="$1"
+	local msg="$2"
+
+	if [[ -z "${!varname}" ]] ; then
+		print_call_stack >&2
+		echo "Env var $varname is not defined or is empty ! $msg" >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
 # Expect string not null {{{1
 ################################################################
 
