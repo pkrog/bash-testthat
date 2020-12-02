@@ -1,7 +1,9 @@
+language: generic
+
 notifications:
- email:
-  recipients:
-   - pk.roger@icloud.com
+  email:
+    recipients:
+      - pierrick.roger@cea.fr
 
 script:
-    - make test
+  - make test
