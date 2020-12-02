@@ -52,10 +52,10 @@ function test_someStuff {
 	expect_num_eq 1 2 || return 1
 }
 
-test_contest "Running some test for an example"
+test_context "Running some test for an example"
 test_that "Some stuff is running correctly." test_someStuff
 ```
-The `test_contest` call define a title for the tests that will follow. It will be printed in the output.
+The `test_context` call define a title for the tests that will follow. It will be printed in the output.
 The `test_that` function calls the test function `test_someStuff` and in case of failure will display the message specified.
 Inside the `test_someStuff` function you have to call assertions in order to test code.
 

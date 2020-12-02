@@ -19,10 +19,13 @@ NB_TEST_CONTEXT=0
 ERR_NUMBER=0
 PRINT=
 FILE_PATTERN='[Tt][Ee][Ss][Tt][-._].*\.sh'
+FCT_PREFIX='[Tt][Ee][Ss][Tt]_\?'
+AUTORUN=$YES
 REPORT=$AT_THE_END
 QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
 declare -a g_err_stderr_files=()
+declare -a g_fcts_run_in_test_file=()
 
 # Print help {{{1
 ################################################################
@@ -35,24 +38,39 @@ The folders are searched for files matching 'test-*.sh' pattern.
 You can use the environment variables TEST_THAT_FCT and TEST_THAT_NO_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run or not run (separated by commas).
 
 Options:
-   -f, --file-pattern  Redefine the regular expression for filtering test files in folders. Default is $FILE_PATTERN.
+
+   -f, --file-pattern  Redefine the regular expression for filtering test files
+                       in folders. Default is "$FILE_PATTERN".
+
    -g, --debug         Debug mode.
+
    -h, --help          Print this help message.
+
+       --no-autorun    Do not detect and run automatically the test functions.
+                       This means you will have to call explicitly the
+                       test_that function.
+
    -p, --print         Print live output of test functions.
+
    -q, --quit-first    Quit on first error, and stop all tests.
                        Useful with $ON_THE_SPOT report (see -r option).
+
    -r, --report <NAME> Set the name of the reporter to use. Possible
                        values are: $ON_THE_SPOT (report each error as it
                        occurs), $AT_THE_END (report at the end of all
                        tests).
                        Default is $AT_THE_END.
+
    -v, --version       Print version.
+
+   -x, --fct-prefix    Set the prefix to use when auto-detecting test
+                       functions. Default is "$FCT_PREFIX".
 
 Writing a test script:
 
-   When inside a test script, you have first to define contest:
-      test_contest "My contest"
-   The text of the contest will be printed on the screen.
+   When inside a test script, you have first to define context:
+      test_context "My context"
+   The text of the context will be printed on the screen.
 
    Then you call test_that for each test function you have written:
       test_that "myFct is working correctly" test_myFct
@@ -61,10 +79,12 @@ Writing a test script:
       function test_myFct {
          expect_num_eq 1 2 || return 1
       }
-   Do not forget to append " || return 1" to the assertion call, otherwise no error will be reported in case of failure.
+   Do not forget to append " || return 1" to the assertion call, otherwise no
+   error will be reported in case of failure.
 
 Assertions:
-   Assertions start all with the prefix "expect_" and need to be followed by " || return 1" in order to report a failure.
+   Assertions start all with the prefix "expect_" and need to be followed by
+   " || return 1" in order to report a failure.
 
    expect_num_eq    Test the equality of two numeric numbers. Example:
                        expect_num_eq $$n 2 || return 1
@@ -107,10 +127,12 @@ function read_args {
 			-f|--file-pattern)  FILE_PATTERN="$2" ; shift ;;
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
+			   --no-autorun)    AUTORUN= ;;
 			-p|--print)         PRINT=$YES ;;
 			-q|--quit-first)    QUIT_ON_FIRST_ERROR=$YES ;;
 			-r|--report)        REPORT="$2" ; shift ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
+			-x|--fct-prefix)    FCT_PREFIX="$2" ; shift ;;
 			-) error "Illegal option $1." ;;
 			--) error "Illegal option $1." ;;
 			--*) error "Illegal option $1." ;;
@@ -134,6 +156,8 @@ function read_args {
 	# Debug
 	print_debug_msg 1 "Arguments are : $args"
 	print_debug_msg 1 "Folders and files to test are : $TOTEST"
+	print_debug_msg 1 "AUTORUN=$AUTORUN"
+	print_debug_msg 1 "FCT_PREFIX=$FCT_PREFIX"
 	print_debug_msg 1 "FILE_PATTERN=$FILE_PATTERN"
 }
 
@@ -206,8 +230,12 @@ function test_that {
 	fi
 
 	# Run test
+	g_fcts_run_in_test_file+=("$test_fct")
 	$test_fct $params 2>"$tmp_stderr_file"
 	exit_code=$?
+
+	# Set message
+	[[ -n $msg ]] || msg="Tests pass in function $test_fct"
 
 	# Print stderr now
 	[[ $PRINT == $YES && -f $tmp_stderr_file ]] && cat $tmp_stderr_file
@@ -248,11 +276,19 @@ function test_that {
 ################################################################################
 
 function run_test_file {
+
 	local file="$1"
 
-	TEST_FILE=$(realpath "$file")
-	TEST_DIR=$(dirname "$TEST_FILE")
+	g_fcts_run_in_test_file=()
 	source "$file"
+
+	# Run all test_.* functions not run explicitly by test_that
+	if [[ $AUTORUN == $YES ]] ; then
+		for fct in $(grep '^ *\(function \+'$FCT_PREFIX'[^ ]\+\|'$FCT_PREFIX'[^ ]\+()\) *{' "$file" | sed 's/^ *\(function \+\)\?\('$FCT_PREFIX'[^ {(]\+\).*$/\2/') ; do
+			[[ $fct == test_context || $fct == test_that ]] && continue
+			[[ " ${g_fcts_run_in_test_file[*]} " == *" $fct "* ]] || test_that "" $fct
+		done
+	fi
 }
 
 # Print end report {{{1

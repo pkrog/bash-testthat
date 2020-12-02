@@ -1,6 +1,7 @@
 # Constants {{{1
 ################################################################################
 
+TEST_DIR=$(dirname $BASH_SOURCE)
 WORK_DIR="$TEST_DIR/workspace"
 
 # Test expect_folder {{{1
