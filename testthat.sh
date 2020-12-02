@@ -18,6 +18,7 @@ TOTEST=
 NB_TEST_CONTEXT=0
 ERR_NUMBER=0
 PRINT=
+FILE_PATTERN='[Tt][Ee][Ss][Tt][-._].*\.sh'
 REPORT=$AT_THE_END
 QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
@@ -27,23 +28,47 @@ declare -a g_err_stderr_files=()
 ################################################################
 
 function print_help {
-	echo "Usage: $PROGNAME [options] <folders or files>"
-	echo
-	echo "The folders are searched for files matching 'test-*.sh' pattern."
-	echo "You can use the environment variables TEST_THAT_FCT and TEST_THAT_NO_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run or not run (separated by commas)."
-	echo
-	echo "Options:"
-	echo "   -g, --debug         Debug mode."
-	echo "   -h, --help          Print this help message."
-	echo "   -p, --print         Print live output of test functions."
-	echo "   -q, --quit-first    Quit on first error, and stop all tests."
-	echo "                       Useful with $ON_THE_SPOT report (see -r option)."
-	echo "   -r, --report <NAME> Set the name of the reporter to use. Possible"
-	echo "                       values are: $ON_THE_SPOT (report each error as it"
-	echo "                       occurs), $AT_THE_END (report at the end of all"
-	echo "                       tests)."
-	echo "                       Default is $AT_THE_END."
-	echo "   -v, --version       Print version."
+	cat <<END_HELP
+Usage: $PROGNAME [options] <folders or files>
+
+The folders are searched for files matching 'test-*.sh' pattern.
+You can use the environment variables TEST_THAT_FCT and TEST_THAT_NO_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run or not run (separated by commas).
+
+Options:
+   -f, --file-pattern  Redefine the regular expression for filtering test files in folders. Default is $FILE_PATTERN.
+   -g, --debug         Debug mode.
+   -h, --help          Print this help message.
+   -p, --print         Print live output of test functions.
+   -q, --quit-first    Quit on first error, and stop all tests.
+                       Useful with $ON_THE_SPOT report (see -r option).
+   -r, --report <NAME> Set the name of the reporter to use. Possible
+                       values are: $ON_THE_SPOT (report each error as it
+                       occurs), $AT_THE_END (report at the end of all
+                       tests).
+                       Default is $AT_THE_END.
+   -v, --version       Print version.
+
+Writing a test script:
+
+   When inside a test script, you have first to define contest:
+      test_contest "My contest"
+   The text of the contest will be printed on the screen.
+
+   Then you call test_that for each test function you have written:
+      test_that "myFct is working correctly" test_myFct
+
+   Inside your test_myFct function, you call assertions:
+      function test_myFct {
+         expect_num_eq 1 2 || return 1
+      }
+   Do not forget to append " || return 1" to the assertion call, otherwise no error will be reported in case of failure.
+
+Assertions:
+   Assertions start all with the prefix "expect_" and need to be followed by " || return 1" in order to report a failure.
+
+   expect_num_eq    Test the equality of two numeric numbers. Example:
+                       expect_num_eq $$n 2 || return 1
+END_HELP
 }
 
 # Error {{{1
@@ -79,11 +104,12 @@ function read_args {
 	# Read options
 	while true ; do
 		case $1 in
+			-f|--file-pattern)  FILE_PATTERN="$2" ; shift ;;
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
 			-p|--print)         PRINT=$YES ;;
 			-q|--quit-first)    QUIT_ON_FIRST_ERROR=$YES ;;
-			-r|--report)        REPORT=$2 ; shift ;;
+			-r|--report)        REPORT="$2" ; shift ;;
 			-v|--version)       echo $VERSION ; exit 0 ;;
 			-) error "Illegal option $1." ;;
 			--) error "Illegal option $1." ;;
@@ -108,6 +134,7 @@ function read_args {
 	# Debug
 	print_debug_msg 1 "Arguments are : $args"
 	print_debug_msg 1 "Folders and files to test are : $TOTEST"
+	print_debug_msg 1 "FILE_PATTERN=$FILE_PATTERN"
 }
 
 # Test context {{{1
@@ -374,7 +401,7 @@ function csv_get_val {
 	echo $val
 }
 
-# Expect success {{{1
+# Expect success after n tries {{{1
 ################################################################
 
 function expect_success_after_n_tries {
@@ -1013,9 +1040,9 @@ for e in ${TOTEST[@]} ; do
 	# Folder
 	if [[ -d $e ]] ; then
 		tmp_file=$(mktemp -t $PROGNAME.XXXXXX)
-		ls $e/* | grep '^[^/]*/[Tt][Ee][Ss][Tt][-._].*\.sh$' | sort >$tmp_file
+		ls $e/* | sort >$tmp_file
 		while read f ; do
-			[[ -f "$f" ]] && run_test_file "$f"
+			[[ -f $f && $f =~ ^[^/]*/$FILE_PATTERN$ ]] && run_test_file "$f"
 		done <$tmp_file
 	fi
 
