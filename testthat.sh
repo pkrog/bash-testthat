@@ -284,7 +284,7 @@ function run_test_file {
 
 	# Run all test_.* functions not run explicitly by test_that
 	if [[ $AUTORUN == $YES ]] ; then
-		for fct in $(grep '^ *\(function\)\? *'$FCT_PREFIX'[^ ]\+\(()\)\?[ {]' "$file" | sed 's/^.*\('$FCT_PREFIX'[^ {(]\+\).*$/\1/') ; do
+		for fct in $(grep '^ *\(function \+'$FCT_PREFIX'[^ ]\+\|'$FCT_PREFIX'[^ ]\+()\) *{' "$file" | sed 's/^ *\(function \+\)\?\('$FCT_PREFIX'[^ {(]\+\).*$/\2/') ; do
 			[[ $fct == test_context || $fct == test_that ]] && continue
 			[[ " ${g_fcts_run_in_test_file[*]} " == *" $fct "* ]] || test_that "" $fct
 		done
