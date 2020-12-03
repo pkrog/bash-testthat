@@ -1515,7 +1515,7 @@ function expect_success_after_n_tries { # DEPRECATED
 
 function expect_file_exists { # DEPRECATED
 	deprecated "expect_file"
-	expect_file "$@"
+	expect_file "$@" || return 1
 }
 
 # Main {{{1
