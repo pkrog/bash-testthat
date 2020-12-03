@@ -2,6 +2,7 @@ test_context "Testing file system assertions"
 
 TEST_DIR=$(dirname $BASH_SOURCE)
 WORK_DIR="$TEST_DIR/workspace"
+mkdir -p "$WORK_DIR"
 
 function test_expect_file {
 	local file="$WORK_DIR/afile"
