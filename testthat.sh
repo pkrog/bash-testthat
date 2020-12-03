@@ -92,80 +92,290 @@ ASSERTIONS:
 
 Success/failure assertions:
 
-   expect_success   Test the success of a command. Example:
+   expect_success   Test the success of a command.
+                    Arguments: command.
+                    Example:
                        expect_success my_command || return 1
+                       expect_success my_command arg1 arg2 || return 1
 
    expect_success_in_n_tries
-                    Test that a command succeeds before n tries. Example:
+                    Test that a command succeeds before n tries.
+                    Arg. 1: Number of tries.
+                    Remaining arguments: command.
+                    Example:
                        expect_success_in_n_tries 3 my_command || return 1
+                       expect_success_in_n_tries 3 my_command arg1 || return 1
 
-   expect_failure   Test the failure of a command. Example:
+   expect_failure   Test the failure of a command.
+                    Arguments: command.
+                    Example:
                        expect_failure my_command || return 1
+                       expect_failure my_command arg1 arg2 || return 1
 
    expect_failure_status
                     Test that a command fails and return a precise status value.
+                    Arg. 1: Expected status number.
+                    Remaining arguments: command.
                     Example:
                        expect_failure_status 4 my_command || return 1
+                       expect_failure_status 4 my_command arg1 arg2 || return 1
 
 String assertions:
 
-   expect_str_null  Test if a string is empty. Example
+   expect_str_null  Test if a string is empty.
+                    Arg. 1: String.
+                    Arg. 2: Message (optional).
+                    Example:
                        expect_str_null $$s || return 1
                        expect_str_null $$s "My Msg." || return 1
 
    expect_str_not_null
-                    Test if a string is not empty. Example
+                    Test if a string is not empty.
+                    Arg. 1: String.
+                    Arg. 2: Message (optional).
+                    Example:
                        expect_str_not_null $$s || return 1
                        expect_str_not_null $$s "My Msg." || return 1
 
-   expect_str_eq    Test if two strings are equal. Example:
+   expect_str_eq    Test if two strings are equal.
+                    Arg. 1: First string.
+                    Arg. 2: Second string.
+                    Arg. 3: Message (optional).
+                    Example:
                        expect_str_eq $$s "abc" || return 1
                        expect_str_eq $$s "abc" "My Msg." || return 1
 
-   expect_str_ne    Test if two strings are different. Example:
+   expect_str_ne    Test if two strings are different.
+                    Arg. 1: First string.
+                    Arg. 2: Second string.
+                    Arg. 3: Message (optional).
+                    Example:
                        expect_str_ne $$s "abc" || return 1
                        expect_str_ne $$s "abc" "My Msg." || return 1
 
+   expect_str_re    Test if a string matches an ERE.
+                    Arg. 1: String.
+                    Arg. 2: Pattern as an ERE.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_str_re $$s "^[a-zA-Z]+-[0-9]+$" || return 1
+                       expect_str_re $$s "^[a-zA-Z]+-[0-9]+$" "My Msg" || return 1
+
 Numeric assertions:
 
-   expect_num_eq    Test the equality of two numeric numbers. Example:
+   expect_num_eq    Test the equality of two integers.
+                    Arg. 1: First integer.
+                    Arg. 2: Second integer.
+                    Arg. 3: Message (optional).
+                    Example:
                        expect_num_eq $$n 2 || return 1
                        expect_num_eq $$n 2 "My Msg." || return 1
 
-   expect_num_ne    Test the inequality of two numeric numbers. Example:
+   expect_num_ne    Test that two integers are different.
+                    Arg. 1: First integer.
+                    Arg. 2: Second integer.
+                    Arg. 3: Message (optional).
+                    Example:
                        expect_num_ne $$n 2 || return 1
                        expect_num_ne $$n 2 "My Msg." || return 1
 
+   expect_num_le    Test that an integer is lower or equal than another.
+                    Arg. 1: First integer.
+                    Arg. 2: Second integer.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_num_le $$n 5 || return 1
+                       expect_num_le $$n 5 "My Msg" || return 1
+
+   expect_num_gt    Test that an integer is strictly greater than another.
+                    Arg. 1: First integer.
+                    Arg. 2: Second integer.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_num_gt $$n 5 || return 1
+                       expect_num_gt $$n 5 "My Msg" || return 1
+
+Environment assertions:
+
+   expect_def_env_var
+                    Test if an environment variable is defined and not empty.
+                    Arg. 1: Name of the environement variable.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_def_env_var MY_VAR || return 1
+                       expect_def_env_var MY_VAR "My Msg" || return 1
+
 File system assertions:
+
+   expect_folder    Test if folder exists.
+                    Arg. 1: Folder.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_folder "myFolder" || return 1
+                       expect_folder "myFolder" "My Msg" || return 1
+
+   expect_no_path   Test if nothing exists (no file, no folder) at the
+                    specified path.
+                    Arg. 1: Path.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_no_path "myFolder" || return 1
+                       expect_no_path "myFolder" "My Msg" || return 1
 
    expect_same_folders
                     Test if two folders have the same content, using "diff"
-                    command. Example:
+                    command.
+                    Arg. 1: First folder.
+                    Arg. 2: Second folder.
+                    Example:
                        expect_same_folders "folderA" "folderB" || return 1
 
    expect_files_in_folder
-                    Test if files matching an ERE are present inside a folder.
+                    Test if files matching a pattern exist inside a folder.
+                    Arg. 1: Folder.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
                     Example:
-                       expect_files_in_folder "myFolder" '^.*-[0-9]+\.txt$' "My Msg" || return 1
+                       expect_files_in_folder "myFolder" "^.*\.txt$" || return 1
+                       expect_files_in_folder "myFolder" "^.*\.txt$" "My Msg" || return 1
+
+   expect_other_files_in_folder
+                    Test if a folder contains files not matching a pattern.
+                    Arg. 1: Folder.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_other_files_in_folder "myFolder" "^.*\.txt$" || return 1
+                       expect_other_files_in_folder "myFolder" "^.*\.txt$" "My Msg" || return 1
+
+   expect_no_other_files_in_folder
+                    Test if a folder contains files matching a pattern, and no
+                    other files.
+                    Arg. 1: Folder.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_no_other_files_in_folder "myFolder" "^.*\.txt$" || return 1
+                       expect_no_other_files_in_folder "myFolder" "^.*\.txt$" "My Msg" || return 1
 
    expect_files_in_tree
-                    Test if files matching an ERE are present inside a tree:
+                    Test if files matching a pattern exist inside a tree structure.
+                    Arg. 1: Folder in which to search recursively.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
                     Example:
-                       expect_files_in_tree "myFolder" '^.*-[0-9]+\.txt$' "My Msg" || return 1
+                       expect_files_in_tree "myFolder" "^.*\.txt$" || return 1
+                       expect_files_in_tree "myFolder" "^.*\.txt$" "My Msg" || return 1
+
+   expect_other_files_in_tree
+                    Test if files not matching a pattern exist inside a tree
+                    structure, and no other files.
+                    Arg. 1: Folder in which to search recursively.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_other_files_in_tree "myFolder" "^.*\.txt$" || return 1
+                       expect_other_files_in_tree "myFolder" "^.*\.txt$" "My Msg" || return 1
+
+   expect_no_other_files_in_tree
+                    Test if files matching a pattern exist inside a tree
+                    structure, and no other files.
+                    Arg. 1: Folder in which to search recursively.
+                    Arg. 2: Files pattern as an ERE.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_no_other_files_in_tree "myFolder" "^.*\.txt$" || return 1
+                       expect_no_other_files_in_tree "myFolder" "^.*\.txt$" "My Msg" || return 1
+
+File assertions:
+
+   expect_same_files
+                    Test if two files are identical.
+                    Arg. 1: File 1.
+                    Arg. 2: File 2.
+                    Example:
+                       expect_same_files "myFile1" "myFile2" || return 1
+
+   expect_empty_file
+                    Test if a file exists and is empty.
+                    Arg. 1: File.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_empty_file "myFile" || return 1
+
+   expect_non_empty_file
+                    Test if a file exists and is not empty.
+                    Arg. 1: File.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_non_empty_file "myFile" || return 1
+
+   expect_no_duplicated_row
+                    Test if a file contains no duplicated rows.
+                    Arg. 1: File.
+                    Example:
+                       expect_no_duplicated_row "myFile" || return 1
+
+   expect_same_number_of_rows
+                    Test if two files contain the same number of lines.
+                    Arg. 1: File 1.
+                    Arg. 2: File 2.
+                    Example:
+                       expect_same_number_of_rows "myFile1" "myFile2" || return 1
 
 CSV assertions:
 
    expect_csv_has_columns
                     Test if a CSV file contains a set of columns. Second
                     argument is the separator character used in the CSV.
+                    Arg. 1: File.
+                    Arg. 2: CSV separator character.
+                    Arg. 3: Expected column names separated by spaces.
                     Example:
                        expect_csv_has_columns "myfile.csv" "," "col1 col2 col3" || return 1
 
    expect_csv_not_has_columns
                     Test if a CSV file does not contain a set of columns.
-                    Second argument is the separator character used in the CSV.
+                    Arg. 1: File.
+                    Arg. 2: CSV separator character.
+                    Arg. 3: Column names separated by spaces.
                     Example:
                        expect_csv_not_has_columns "myfile.csv" "," "col1 col2 col3" || return 1
+
+   expect_csv_identical_col_values
+                    Test if two CSV files contain the same column with the same
+                    values.
+                    Arg. 1: Column name.
+                    Arg. 2: File 1.
+                    Arg. 3: File 2.
+                    Arg. 4: CSV separator character.
+                    Example:
+                       expect_csv_identical_col_values "myCol" "myFile1" "myFile2" ";" || return 1
+
+   expect_csv_float_col_equals
+                    Test if all the values of a CSV file column are close to a float value.
+                    Arg. 1: File.
+                    Arg. 2: CSV separator.
+                    Arg. 3: Column name.
+                    Arg. 4: Float value.
+                    Arg. 5: Tolerance.
+                    Example:
+                       expect_csv_float_col_equals "myFile" "," "myCol" 10.01 0.01 || return 1
+
+   expect_csv_same_col_names
+                    Test if two CSV files contain the same column names.
+                    Arg. 1: File 1.
+                    Arg. 2: File 2.
+                    Arg. 3: CSV separator.
+                    Arg. 4: The number of columns on which to make the
+                            comparison. If unset all columns will be used
+                            (optional).
+                    Arg. 5: If set to 1, then double quotes will be removed
+                            from column names before comparison (optional).
+                    Example:
+                       expect_csv_same_col_names "myFile1" "myFile2" ";" || return 1
+                       expect_csv_same_col_names "myFile1" "myFile2" ";" 8 || return 1
+                       expect_csv_same_col_names "myFile1" "myFile2" ";" 8 1 || return 1
 
 DEPRECATED ASSERTIONS:
 
@@ -179,6 +389,20 @@ DEPRECATED ASSERTIONS:
 
    csv_expect_not_has_columns
                        Replaced by "expect_csv_not_has_columns".
+
+   csv_expect_identical_col_values
+                       Replaced by "expect_csv_identical_col_values".
+
+   csv_expect_float_col_equals
+                       Replaced by "expect_csv_float_col_equals".
+
+   csv_expect_same_col_names
+                       Replaced by "expect_csv_same_col_names".
+
+GLOSSARY
+
+   ERE      Extended Regular Expression.
+
 END_HELP
 }
 
@@ -661,10 +885,10 @@ function expect_csv_not_has_columns {
 	echo -n .
 }
 
-# CSV expect identical column values {{{2
+# Expect CSV identical column values {{{2
 ################################################################
 
-function csv_expect_identical_col_values {
+function expect_csv_identical_col_values {
 
 	local col=$1
 	local file1=$2
@@ -710,10 +934,10 @@ function csv_expect_same_col_names {
 	echo -n .
 }
 
-# CSV expect float column equals {{{2
+# Expect CSV float column equals {{{2
 ################################################################
 
-function csv_expect_float_col_equals {
+function expect_csv_float_col_equals {
 
 	local file=$1
 	local sep=$2
@@ -1237,6 +1461,30 @@ function expect_same_folders {
 
 # Deprecated {{{1
 ################################################################
+
+# CSV expect same col_names {{{2
+################################################################
+
+function csv_expect_same_col_names { # DEPRECATED
+	deprecated "expect_csv_same_col_names"
+	expect_csv_same_col_names "$@" || return 1 
+}
+
+# CSV expect float column equals {{{2
+################################################################
+
+function csv_expect_float_col_equals { # DEPRECATED
+	deprecated "expect_csv_float_col_equals"
+	expect_csv_float_col_equals "$@" || return 1 
+}
+
+# CSV expect identical col values {{{2
+################################################################
+
+function csv_expect_identical_col_values { # DEPRECATED
+	deprecated "expect_csv_identical_col_values"
+	expect_csv_identical_col_values "$@" || return 1 
+}
 
 # CSV expect has columns {{{2
 ################################################################
