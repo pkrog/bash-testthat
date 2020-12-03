@@ -1,3 +1,7 @@
+# vi: se fdm=marker
+
+test_context "Testing file system assertions"
+
 # Constants {{{1
 ################################################################################
 
@@ -44,11 +48,3 @@ function test_expect_same_folders {
 	touch "$folder_b/somefile"
 	expect_success expect_same_folders  "$folder_a" "$folder_b" || return 1
 }
-
-# Main {{{1
-################################################################################
-
-test_context "Testing file system assertions"
-
-test_that "expect_folder() works correctly." test_expect_folder
-test_that "expect_same_folders() works correctly." test_expect_same_folders

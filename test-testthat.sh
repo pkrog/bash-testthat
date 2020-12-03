@@ -1,26 +1,4 @@
-# Test success and failure {{{1
-################################################################################
-
-function test_success_failure {
-	expect_success true  || return 1
-	expect_failure false || return 2
-}
-
-# Test expect_success_after_n_tries() {{{1
-################################################################################
-
-I_TRIES=0
-N_TRIES=3
-
-function command_n_tries {
-
-	((++I_TRIES))
-	[[ $I_TRIES == $N_TRIES ]] || return 1
-}
-
-function test_expect_success_after_n_tries {
-	expect_success_after_n_tries 3 command_n_tries || return 1
-}
+# vi: se fdm=marker
 
 # Test numeric testing {{{1
 ################################################################
@@ -117,8 +95,6 @@ function test_file_system_testing {
 
 test_context "Testing testthat"
 
-test_that "Success and failure are detected." test_success_failure
-test_that "expect_success_after_n_tries() works fine." test_expect_success_after_n_tries
 test_that "Numeric testing works well." test_numeric_testing
 test_that "String testing works well." test_string_testing
 test_that "File system testing works well." test_file_system_testing

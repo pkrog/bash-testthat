@@ -86,6 +86,21 @@ Assertions:
    Assertions start all with the prefix "expect_" and need to be followed by
    " || return 1" in order to report a failure.
 
+   expect_success   Test the success of a command. Example:
+                       expect_success my_command || return 1
+
+   expect_success_in_n_tries
+                    Test that a command succeeds before n tries. Example:
+                       expect_success_in_n_tries 3 my_command || return 1
+
+   expect_failure   Test the failure of a command. Example:
+                       expect_failure my_command || return 1
+
+   expect_failure_status
+                    Test that a command fails and return a precise status value.
+                    Example:
+                       expect_failure_status 4 my_command || return 1
+
    expect_num_eq    Test the equality of two numeric numbers. Example:
                        expect_num_eq $$n 2 || return 1
 END_HELP
@@ -103,10 +118,10 @@ function error {
 	exit 1
 }
 
-# Print debug msg {{{1
+# Debug {{{1
 ################################################################
 
-function print_debug_msg {
+function debug {
 
 	local dbglvl=$1
 	local dbgmsg=$2
@@ -154,11 +169,11 @@ function read_args {
 	[[ $REPORT == $AT_THE_END || $REPORT == $ON_THE_SPOT ]] || error "Unknown reporter $REPORT."
 
 	# Debug
-	print_debug_msg 1 "Arguments are : $args"
-	print_debug_msg 1 "Folders and files to test are : $TOTEST"
-	print_debug_msg 1 "AUTORUN=$AUTORUN"
-	print_debug_msg 1 "FCT_PREFIX=$FCT_PREFIX"
-	print_debug_msg 1 "FILE_PATTERN=$FILE_PATTERN"
+	debug 1 "Arguments are : $args"
+	debug 1 "Folders and files to test are : $TOTEST"
+	debug 1 "AUTORUN=$AUTORUN"
+	debug 1 "FCT_PREFIX=$FCT_PREFIX"
+	debug 1 "FILE_PATTERN=$FILE_PATTERN"
 }
 
 # Test context {{{1
@@ -437,10 +452,15 @@ function csv_get_val {
 	echo $val
 }
 
-# Expect success after n tries {{{1
+# Expect success in n tries {{{1
 ################################################################
 
 function expect_success_after_n_tries {
+	debug 1 "Deprecated function. Use expect_success_in_n_tries() instead."
+	expect_success_in_n_tries "$@" || return 1
+}
+
+function expect_success_in_n_tries {
 
 	local n=$1
 	shift
@@ -494,6 +514,31 @@ function expect_failure {
 		print_call_stack >&2
 		echo "Command \"$cmd\" was successful, but expected failure." >&2
 		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect failure status {{{1
+################################################################
+
+function expect_failure_status {
+
+	local expected_status="$1"
+	shift
+	local cmd="$*"
+
+	"$@" >&2
+	local actual_status=$?
+
+	if [[ $actual_status -eq 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" was successful, but expected failure with status $expected_status." >&2
+		return 1
+	elif [[ $actual_status -ne $expected_status ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $actual_status, but expected status $expected_status." >&2
+		return 2
 	fi
 
 	echo -n .
