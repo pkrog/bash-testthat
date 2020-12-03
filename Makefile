@@ -2,7 +2,7 @@ all:
 
 test:
 	./testthat.sh test
-	./testthat.sh test-testthat.sh
+	./testthat.sh test/test_*.sh
 
 clean:
 	$(RM) -r test/workspace
