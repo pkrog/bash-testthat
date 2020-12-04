@@ -33,5 +33,5 @@ after_success: |
   cd ../.. &&
   rm -rf kcov-master &&
   mkdir -p coverage &&
-  kcov coverage ./testthat.sh test &&
+  kcov coverage make test &&
   bash <(curl -s https://codecov.io/bash)
