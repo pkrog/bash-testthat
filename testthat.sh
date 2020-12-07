@@ -120,6 +120,34 @@ Success/failure assertions:
                        expect_failure_status 4 my_command || return 1
                        expect_failure_status 4 my_command arg1 arg2 || return 1
 
+Output assertions:
+
+   expect_empty_output
+                    Test if a command output nothing on stdout.
+                    Arguments: command.
+                    Example:
+                       expect_empty_output my_command arg1 arg2 || return 1
+
+   expect_non_empty_output
+                    Test if a command output something on stdout.
+                    Arguments: command.
+                    Example:
+                       expect_non_empty_output my_command arg1 arg2 || return 1
+
+   expect_output_nlines_eq
+                    Test if a command output exactly n lines of text on stdout.
+                    Arg. 1: Expected number of lines.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_nlines_eq 3 my_command arg1 arg2 || return 1
+
+   expect_output_nlines_ge
+                    Test if a command output n lines or more of text on stdout.
+                    Arg. 1: Expected minimum number of lines.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_nlines_ge 3 my_command arg1 arg2 || return 1
+
 String assertions:
 
    expect_str_null  Test if a string is empty.
@@ -744,6 +772,122 @@ function expect_failure_status {
 	echo -n .
 }
 
+# Output assertions {{{1
+################################################################
+
+## Expect empty output {{{2
+################################################################
+
+function expect_empty_output {
+
+	local cmd="$*"
+	local output=
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	output=$(cat "$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $expected_status." >&2
+		return 1
+	elif [[ -n $output ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is not empty. Output: \"$output\"." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect non empty output {{{2
+################################################################
+
+function expect_non_empty_output {
+
+	local cmd="$*"
+	local empty=
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	[[ -s "$tmpfile" ]] || empty=$YES
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $expected_status." >&2
+		return 1
+	elif [[ $empty == $YES ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is empty." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect output nlines equals to {{{2
+################################################################
+
+function expect_output_nlines_eq {
+
+	local n="$1"
+	shift
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	local nlines=$(wc -l <"$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $expected_status." >&2
+		return 1
+	elif [[ $nlines -ne $n ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" contains $nlines lines, not $n." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect output nlines greater than or equal to {{{2
+################################################################
+
+function expect_output_nlines_ge {
+
+	local n="$1"
+	shift
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	local nlines=$(wc -l <"$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $expected_status." >&2
+		return 1
+	elif [[ ! $nlines -ge $n ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" contains less than $n lines. It contains $nlines lines." >&2
+		return 2
+	fi
+
+	echo -n .
+}
 
 # CSV assertions {{{1
 ################################################################
