@@ -10,6 +10,15 @@ function test_non_empty_output {
 	expect_failure expect_non_empty_output echo -n || return 1
 }
 
+function test_output {
+	expect_success expect_output "" echo -n || return 1
+	expect_success expect_output "ABC" echo -n ABC || return 1
+	expect_failure expect_output "1" echo -n || return 1
+	expect_success expect_output "A\nBC" echo -ne "A\nBC" || return 1
+	expect_success expect_output "ABC\n" echo ABC || return 1
+	expect_success expect_output "\n" echo || return 1
+}
+
 function test_output_nlines_eq {
 	expect_success expect_output_nlines_eq 0 echo -n || return 1
 	expect_success expect_output_nlines_eq 1 echo ABC || return 1
