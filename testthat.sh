@@ -120,6 +120,68 @@ Success/failure assertions:
                        expect_failure_status 4 my_command || return 1
                        expect_failure_status 4 my_command arg1 arg2 || return 1
 
+Output assertions:
+
+   expect_empty_output
+                    Test if a command output nothing on stdout.
+                    Arguments: command.
+                    Example:
+                       expect_empty_output my_command arg1 arg2 || return 1
+
+   expect_non_empty_output
+                    Test if a command output something on stdout.
+                    Arguments: command.
+                    Example:
+                       expect_non_empty_output my_command arg1 arg2 || return 1
+
+   expect_output_eq Test if the output of a command is equals to a value. The
+                    output is stripped from carriage returns before comparison.
+                    Arg. 1: Expected output as a string.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_eq "Expected Output" my_command arg1 arg2 || return 1
+
+   expect_output_ne Test if the output of a command is equals to a value. The
+                    output is stripped from carriage returns before comparison.
+                    Arg. 1: Expected output as a string.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_ne "Expected Output" my_command arg1 arg2 || return 1
+
+   expect_output_esc_eq
+                    Test if the output of a command is equals to a value.
+                    Carriage returns are preserved.
+                    Arg. 1: Expected output as a string for echo command with
+                            trailing newline disabled and backslash escapes
+                            enabled.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_esc_eq "Expected Output" my_command arg1 arg2 || return 1
+
+   expect_output_esc_ne
+                    Test if the output of a command is different from a value.
+                    Carriage returns are preserved.
+                    Arg. 1: Expected output as a string for echo command with
+                            trailing newline disabled and backslash escapes
+                            enabled.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_esc_ne "Expected Output" my_command arg1 arg2 || return 1
+
+   expect_output_nlines_eq
+                    Test if a command output exactly n lines of text on stdout.
+                    Arg. 1: Expected number of lines.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_nlines_eq 3 my_command arg1 arg2 || return 1
+
+   expect_output_nlines_ge
+                    Test if a command output n lines or more of text on stdout.
+                    Arg. 1: Expected minimum number of lines.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_nlines_ge 3 my_command arg1 arg2 || return 1
+
 String assertions:
 
    expect_str_null  Test if a string is empty.
@@ -484,6 +546,15 @@ function read_args {
 	debug 1 "FILE_PATTERN=$FILE_PATTERN"
 }
 
+
+# Join by {{{1
+################################################################
+
+function join_by {
+	local IFS="$1"
+	shift
+	echo "$*"
+}
 # Test context {{{1
 ################################################################
 
@@ -744,6 +815,227 @@ function expect_failure_status {
 	echo -n .
 }
 
+# Output assertions {{{1
+################################################################
+
+## Expect empty output {{{2
+################################################################
+
+function expect_empty_output {
+
+	local cmd="$*"
+	local output=
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	output=$(cat "$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		return 1
+	elif [[ -n $output ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is not empty. Output: \"$output\"." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect non empty output {{{2
+################################################################
+
+function expect_non_empty_output {
+
+	local cmd="$*"
+	local empty=
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	[[ -s "$tmpfile" ]] || empty=$YES
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		return 1
+	elif [[ $empty == $YES ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is empty." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect output with operator {{{2
+################################################################
+
+function _expect_output_op {
+
+	local op="$1"
+	local expected_output="$2"
+	shift 2
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+	local output=$(cat "$tmpfile")
+	rm "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		return 1
+	elif [[ $op == eq && "$expected_output" != "$output" ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is wrong. Expected \"$expected_output\". Got \"$output\"." >&2
+		return 2
+	elif [[ $op == ne && "$expected_output" == "$output" ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is wrong. Expected something different from \"$expected_output\"." >&2
+		return 3
+	fi
+
+	echo -n .
+}
+
+## Expect output equals to {{{2
+################################################################
+
+function expect_output_eq {
+	_expect_output_op 'eq' "$@"
+	return $?
+}
+
+## Expect output different from {{{2
+################################################################
+
+function expect_output_ne {
+	_expect_output_op 'ne' "$@"
+	return $?
+}
+
+## Expect output with operator, using escape chars {{{2
+################################################################
+
+function _expect_output_esc_op {
+
+	local op="$1"
+	local expected_output="$2"
+	shift 2
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+	local tmpfile2=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	echo -ne "$expected_output" >"$tmpfile2"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		rm "$tmpfile" "$tmpfile2"
+		return 1
+	elif [[ $op == eq ]] && ! diff -q "$tmpfile" "$tmpfile2" ; then
+		print_call_stack >&2
+		echo -n "Output of \"$cmd\" is wrong. Expected \"$expected_output\". Got \"" >&2
+		cat $tmpfile >&2
+		echo "\"." >&2
+		rm "$tmpfile" "$tmpfile2"
+		return 2
+	elif [[ $op == ne ]] && diff -q "$tmpfile" "$tmpfile2" ; then
+		print_call_stack >&2
+		echo -n "Output of \"$cmd\" is wrong. Expected something different from \"$expected_output\"." >&2
+		rm "$tmpfile" "$tmpfile2"
+		return 3
+	fi
+
+	rm "$tmpfile" "$tmpfile2"
+	echo -n .
+}
+
+## Expect output different from, using escape chars {{{2
+################################################################
+
+function expect_output_esc_ne {
+	_expect_output_esc_op 'ne' "$@"
+	return $?
+}
+
+## Expect output equals to, using escape chars {{{2
+################################################################
+
+function expect_output_esc_eq {
+	_expect_output_esc_op 'eq' "$@"
+	return $?
+}
+
+## Expect output nlines equals to {{{2
+################################################################
+
+function expect_output_nlines_eq {
+
+	local n="$1"
+	shift
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	local nlines=$(wc -l <"$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		return 1
+	elif [[ $nlines -ne $n ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" contains $nlines lines, not $n." >&2
+		return 2
+	fi
+
+	echo -n .
+}
+
+## Expect output nlines greater than or equal to {{{2
+################################################################
+
+function expect_output_nlines_ge {
+
+	local n="$1"
+	shift
+	local cmd="$*"
+	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
+
+	"$@" >"$tmpfile"
+	local status=$?
+
+	local nlines=$(wc -l <"$tmpfile")
+	unlink "$tmpfile"
+
+	if [[ $status -ne 0 ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
+		return 1
+	elif [[ ! $nlines -ge $n ]] ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" contains less than $n lines. It contains $nlines lines." >&2
+		return 2
+	fi
+
+	echo -n .
+}
 
 # CSV assertions {{{1
 ################################################################
