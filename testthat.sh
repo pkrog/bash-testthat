@@ -269,6 +269,13 @@ Environment assertions:
 
 File system assertions:
 
+   expect_file      Test if file exists.
+                    Arg. 1: File.
+                    Arg. 2: Message (optional).
+                    Example:
+                       expect_folder "myFile" || return 1
+                       expect_folder "myFile" "My Msg" || return 1
+
    expect_folder    Test if folder exists.
                     Arg. 1: Folder.
                     Arg. 2: Message (optional).
