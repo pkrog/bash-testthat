@@ -55,6 +55,17 @@ function test_expect_folder {
 	expect_failure expect_folder "$file" "Message" || return 1
 }
 
+function test_expect_folder_is_writable {
+
+	local folder="$WORK_DIR/afolder"
+	rm -r "$folder"
+	mkdir -p "$folder"
+	chmod a-w "$folder"
+	expect_failure expect_folder_is_writable "$folder" "Message" "" return 1
+	chmod u+w "$folder"
+	expect_success expect_folder_is_writable "$folder" "Message" "" return 1
+}
+
 function test_expect_files_in_folder {
 	local folder="$WORK_DIR/afolder"
 	local file="$folder/afile.txt"

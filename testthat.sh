@@ -364,6 +364,13 @@ File system assertions:
                        expect_no_other_files_in_tree "myFolder" "^.*\.txt$" || return 1
                        expect_no_other_files_in_tree "myFolder" "^.*\.txt$" "My Msg" || return 1
 
+   expect_folder_is_writable
+                    Test files can be created or modified inside a folder.
+                    Arg. 1: Path to the folder.
+                    Arg. 3: Message (optional).
+                    Example:
+                       expect_folder_is_writable "myFolder" "My Msg" || return 1
+
 File assertions:
 
    expect_same_files
@@ -1626,6 +1633,25 @@ function expect_symlink {
 		fi
 	fi
 
+	echo -n .
+}
+
+# Expect folder is writable {{{2
+################################################################
+
+function expect_folder_is_writable {
+
+	local folder="$1"
+	local msg="$2"
+	local file="$folder/.___testthat_test_file___"
+
+	if ! touch "$file" ; then
+		print_call_stack >&2
+		echo "Folder \"$folder\" is not writable. $msg" >&2
+		return 1
+	fi
+
+	unlink "$file"
 	echo -n .
 }
 
