@@ -5,7 +5,7 @@
 ################################################################
 
 PROGNAME=$(basename $0)
-VERSION=1.3.0
+VERSION=1.3.1
 YES=yes
 ON_THE_SPOT=on.the.spot
 AT_THE_END=at.the.end

@@ -1,3 +1,10 @@
+CHANGES IN VERSION 1.3.1
+------------------------
+
+NEW FEATURES
+
+ * Test symbolic link.
+
 CHANGES IN VERSION 1.3.0
 ------------------------
 
