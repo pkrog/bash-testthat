@@ -5,10 +5,13 @@ WORK_DIR="$TEST_DIR/workspace"
 mkdir -p "$WORK_DIR"
 
 function test_expect_file {
+
 	local file="$WORK_DIR/afile"
+	rm -f "$file"
 
 	expect_failure expect_file "a_file_that_does_not_exist" "Message" || return 1
 	expect_failure expect_file_exists "a_file_that_does_not_exist" "Message" || return 1
+	expect_failure expect_file "$file" "Message" || return 1
 	touch "$file"
 	expect_success expect_file "$file" "Message" || return 1
 	expect_success expect_file_exists "$file" "Message" || return 1
@@ -20,20 +23,25 @@ function test_expect_file {
 }
 
 function test_expect_symlink {
-	local file="$WORK_DIR/afile"
-	local symlink="$WORK_DIR/asymkink"
 
+	local file=$(realpath "$WORK_DIR/afile")
+	local symlink="$WORK_DIR/asymkink"
+	rm -f "$symlink" "$file"
+
+	expect_failure expect_symlink "$symlink" "$file" "Message" || return 1
 	expect_failure expect_symlink "a_symlink_that_does_not_exist" "a_file_that_does_not_exist" "Message" || return 1
 	touch "$file"
+	expect_success expect_file "$file" "Message" || return 1
 	expect_failure expect_symlink "file" "a_file_that_does_not_exist" "Message" || return 1
-	ln -sf "$symlink" "$file"
+	ln -sf "$file" "$symlink"
 	expect_failure expect_symlink "$symlink" "a_file_that_does_not_exist" "Message" || return 1
-	expect_failure expect_symlink "$symlink" "$file" "Message" || return 1
+	expect_success expect_symlink "$symlink" "$file" "Message" || return 1
 	rm "$symlink"
 	rm "$file"
 }
 
 function test_expect_folder {
+
 	local folder="$WORK_DIR/afolder"
 	local file="$WORK_DIR/afile"
 
