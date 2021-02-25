@@ -283,6 +283,14 @@ File system assertions:
                        expect_folder "myFolder" || return 1
                        expect_folder "myFolder" "My Msg" || return 1
 
+   expect_symlink   Test if a symbolic link exists and points to a certain
+                    location.
+                    Arg. 1: Symbolic link path.
+                    Arg. 2: The path to which the link points.
+                    Arg. 3: Message (optional).
+                    Example:
+                      expect_symlink "/my/sym/link" "/the/file/to/which/it/points"
+
    expect_no_path   Test if nothing exists (no file, no folder) at the
                     specified path.
                     Arg. 1: Path.
@@ -1590,6 +1598,32 @@ function expect_file {
 		print_call_stack >&2
 		echo "\"$file\" does not exist or is not a file. $msg" >&2
 		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect symlink {{{2
+################################################################
+
+function expect_symlink {
+
+	local symklink="$1"
+	local pointed_path="$2"
+	local msg="$3"
+
+	if [[ ! -h $symlink ]] ; then
+		print_call_stack >&2
+		echo "\"$symlink\" does not exist or is not a file. $msg" >&2
+		return 1
+	else
+		local path=$(realpath "$symlink")
+		local real_pointed_path=$(realpath "$pointed_path")
+		if [[ $path != $real_pointed_path ]] ; then
+			print_call_stack >&2
+			echo "\"$symlink\" does not point to \"$pointed_path\" but to \"$path\". $msg" >&2
+			return 1
+		fi
 	fi
 
 	echo -n .

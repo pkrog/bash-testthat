@@ -19,6 +19,20 @@ function test_expect_file {
 	expect_failure expect_file "$file" "Message" || return 1
 }
 
+function test_expect_symlink {
+	local file="$WORK_DIR/afile"
+	local symlink="$WORK_DIR/asymkink"
+
+	expect_failure expect_symlink "a_symlink_that_does_not_exist" "a_file_that_does_not_exist" "Message" || return 1
+	touch "$file"
+	expect_failure expect_symlink "file" "a_file_that_does_not_exist" "Message" || return 1
+	ln -sf "$symlink" "$file"
+	expect_failure expect_symlink "$symlink" "a_file_that_does_not_exist" "Message" || return 1
+	expect_failure expect_symlink "$symlink" "$file" "Message" || return 1
+	rm "$symlink"
+	rm "$file"
+}
+
 function test_expect_folder {
 	local folder="$WORK_DIR/afolder"
 	local file="$WORK_DIR/afile"
