@@ -173,3 +173,25 @@ function test_expect_same_folders {
 	touch "$folder_b/somefile"
 	expect_success expect_same_folders  "$folder_a" "$folder_b" || return 1
 }
+
+function test_expect_output_nlines_eq {
+
+	expect_success expect_output_nlines_eq 0 echo -n "" || return 1
+	expect_failure expect_output_nlines_eq 1 echo -n "" || return 1
+	expect_failure expect_output_nlines_eq 0 echo "" || return 1
+	expect_success expect_output_nlines_eq 1 echo "" || return 1
+	expect_failure expect_output_nlines_eq 0 echo -n "ABC" || return 1
+	expect_success expect_output_nlines_eq 1 echo -n "ABC" || return 1
+	expect_failure expect_output_nlines_eq 2 echo -n "ABC" || return 1
+	expect_failure expect_output_nlines_eq 0 echo "ABC" || return 1
+	expect_success expect_output_nlines_eq 1 echo "ABC" || return 1
+	expect_failure expect_output_nlines_eq 2 echo "ABC" || return 1
+	expect_failure expect_output_nlines_eq 0 echo -en "ABC\nDEF" || return 1
+	expect_failure expect_output_nlines_eq 1 echo -en "ABC\nDEF" || return 1
+	expect_success expect_output_nlines_eq 2 echo -en "ABC\nDEF" || return 1
+	expect_failure expect_output_nlines_eq 3 echo -en "ABC\nDEF" || return 1
+	expect_failure expect_output_nlines_eq 0 echo -e "ABC\nDEF" || return 1
+	expect_failure expect_output_nlines_eq 1 echo -e "ABC\nDEF" || return 1
+	expect_success expect_output_nlines_eq 2 echo -e "ABC\nDEF" || return 1
+	expect_failure expect_output_nlines_eq 3 echo -e "ABC\nDEF" || return 1
+}

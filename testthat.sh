@@ -1014,7 +1014,7 @@ function expect_output_nlines_eq {
 	"$@" >"$tmpfile"
 	local status=$?
 
-	local nlines=$(wc -l <"$tmpfile")
+	local nlines=$(awk 'END { print NR }' "$tmpfile")
 	unlink "$tmpfile"
 
 	if [[ $status -ne 0 ]] ; then
