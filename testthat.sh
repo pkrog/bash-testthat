@@ -9,6 +9,8 @@ VERSION=1.3.1
 YES=yes
 ON_THE_SPOT=on.the.spot
 AT_THE_END=at.the.end
+INCLUDE_FCTS=${TESTTHAT_INCLUDE_FCTS:-}
+INCLUDE_FILES=${TESTTHAT_INCLUDE_FILES:-}
 
 # Global variables {{{1
 ################################################################
@@ -51,6 +53,18 @@ OPTIONS:
        --no-autorun    Do not detect and run automatically the test functions.
                        This means you will have to call explicitly the
                        test_that function.
+
+   -i, --include-fcts <fct1,fct2,...>
+                       Set a selection of test functions to run. Only those test
+                       functions will be run, if they exist. The value is a
+                       comma separated list of functions names. Can be set also
+                       through TESTTHAT_INCLUDE_FCTS environment variable.
+
+   --j, --include-files <file1, file2, ...>
+                       Set a selection of test files to run. Only those test
+                       files will be run, if they exist. The value is a
+                       comma separated list of files names. Can be set also
+                       through TESTTHAT_INCLUDE_FILES environment variable.
 
    -p, --print         Print live output of test functions.
 
@@ -534,7 +548,9 @@ function read_args {
 			-f|--file-pattern)  FILE_PATTERN="$2" ; shift ;;
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
-			   --no-autorun)    AUTORUN= ;;
+			--no-autorun)       AUTORUN= ;;
+			-i|--include-fcts)  INCLUDE_FCTS="$2" ; shift ;;
+			-j|--include-files) INCLUDE_FILES="$2" ; shift ;;
 			-p|--print)         PRINT=$YES ;;
 			-q|--quit-first)    QUIT_ON_FIRST_ERROR=$YES ;;
 			-r|--report)        REPORT="$2" ; shift ;;
@@ -564,8 +580,12 @@ function read_args {
 	debug 1 "Arguments are : $args"
 	debug 1 "Folders and files to test are : $TOTEST"
 	debug 1 "AUTORUN=$AUTORUN"
+	debug 1 "DEBUG=$DEBUG"
 	debug 1 "FCT_PREFIX=$FCT_PREFIX"
 	debug 1 "FILE_PATTERN=$FILE_PATTERN"
+	debug 1 "INCLUDE_FCTS=$INCLUDE_FCTS"
+	debug 1 "INCLUDE_FILES=$INCLUDE_FILES"
+	debug 1 "REPORT=$REPORT"
 }
 
 
@@ -701,7 +721,14 @@ function run_test_file {
 	# Run all test_.* functions not run explicitly by test_that
 	if [[ $AUTORUN == $YES ]] ; then
 		for fct in $(grep '^ *\(function \+'$FCT_PREFIX'[^ ]\+\|'$FCT_PREFIX'[^ ]\+()\) *{' "$file" | sed 's/^ *\(function \+\)\?\('$FCT_PREFIX'[^ {(]\+\).*$/\2/') ; do
+
+			# Ignore some reserved names
 			[[ $fct == test_context || $fct == test_that ]] && continue
+
+			# Filtering
+			[[ -z $INCLUDE_FCTS || ",$INCLUDE_FCTS," == *",$fct,"* ]] || continue
+
+			# Run function
 			[[ " ${g_fcts_run_in_test_file[*]} " == *" $fct "* ]] || test_that "" $fct
 		done
 	fi
@@ -1877,30 +1904,48 @@ function expect_file_exists { # DEPRECATED
 	expect_file "$@" || return 1
 }
 
+# Run tests {{{1
+################################################################
+
+function run_tests {
+
+	# Loop on folders and files to test
+	for e in ${TOTEST[@]} ; do
+
+		[[ -f $e || -d $e ]] || error "\"$e\" is neither a file nor a folder."
+
+		# File
+		[[ -f $e ]] && run_test_file "$e"
+
+		# Folder
+		if [[ -d $e ]] ; then
+			local tmp_file=$(mktemp -t $PROGNAME.XXXXXX)
+			ls $e/* | sort >$tmp_file
+			while read f ; do
+
+				# Check file pattern
+				[[ -f $f && $f =~ ^[^/]*/$FILE_PATTERN$ ]] || continue
+
+				# Filter
+				local filename=$(basename "$f")
+				[[ -z $INCLUDE_FILES || ",$INCLUDE_FILES," == *",$filename,"* ]] || continue
+
+				# Run tests in file
+				run_test_file "$f"
+			done <$tmp_file
+		fi
+
+	done
+}
+
 # Main {{{1
 ################################################################
 
 # Read arguments
 read_args "$@"
 
-# Loop on folders and files to test
-for e in ${TOTEST[@]} ; do
-
-	[[ -f $e || -d $e ]] || error "\"$e\" is neither a file nor a folder."
-
-	# File
-	[[ -f $e ]] && run_test_file "$e"
-
-	# Folder
-	if [[ -d $e ]] ; then
-		tmp_file=$(mktemp -t $PROGNAME.XXXXXX)
-		ls $e/* | sort >$tmp_file
-		while read f ; do
-			[[ -f $f && $f =~ ^[^/]*/$FILE_PATTERN$ ]] && run_test_file "$f"
-		done <$tmp_file
-	fi
-
-done
+# Run
+run_tests
 
 # Finalize
 finalize_tests
