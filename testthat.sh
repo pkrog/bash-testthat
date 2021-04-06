@@ -196,6 +196,14 @@ Output assertions:
                     Example:
                        expect_output_nlines_ge 3 my_command arg1 arg2 || return 1
 
+   expect_output_re Test if the output of a command matches a regular
+                    expression. The output is stripped from carriage returns
+                    before comparison.
+                    Arg. 1: Regular expression.
+                    Remaining arguments: command.
+                    Example:
+                       expect_output_re "A.*B" my_command arg1 arg2 || return 1
+
 String assertions:
 
    expect_str_null  Test if a string is empty.
@@ -951,6 +959,10 @@ function _expect_output_op {
 		print_call_stack >&2
 		echo "Output of \"$cmd\" is wrong. Expected something different from \"$expected_output\"." >&2
 		return 3
+	elif [[ $op == re ]] && ! egrep "$expected_output" <<<"$output" ; then
+		print_call_stack >&2
+		echo "Output of \"$cmd\" is wrong. Expected \"$expected_output\". Got \"$output\"." >&2
+		return 4
 	fi
 
 	echo -n .
@@ -961,6 +973,14 @@ function _expect_output_op {
 
 function expect_output_eq {
 	_expect_output_op 'eq' "$@"
+	return $?
+}
+
+## Expect output matches regex {{{2
+################################################################
+
+function expect_output_re {
+	_expect_output_op 're' "$@"
 	return $?
 }
 

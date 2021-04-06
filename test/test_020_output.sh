@@ -78,3 +78,11 @@ function test_output_nlines_ge {
 	expect_failure expect_output_nlines_ge 3 echo -e "A\nBC" || return 1
 	expect_failure expect_output_nlines_ge 4 echo -e "A\nB\nC" || return 1
 }
+
+function test_output_re {
+	expect_success expect_output_re ".*" echo -n || return 1
+	expect_success expect_output_re "A.C" echo -n ABC || return 1
+	expect_failure expect_output_re "." echo -n || return 1
+	expect_failure expect_output_re "^[B-C]+" echo -n ABC || return 1
+	expect_success expect_output_re "[A-C]*" echo -n ABC || return 1
+}
