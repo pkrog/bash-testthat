@@ -959,7 +959,7 @@ function _expect_output_op {
 		print_call_stack >&2
 		echo "Output of \"$cmd\" is wrong. Expected something different from \"$expected_output\"." >&2
 		return 3
-	elif [[ $op == re ]] && ! egrep "$expected_output" <<<"$output" ; then
+	elif [[ $op == re ]] && ! egrep "$expected_output" >/dev/null <<<"$output" ; then
 		print_call_stack >&2
 		echo "Output of \"$cmd\" is wrong. Expected \"$expected_output\". Got \"$output\"." >&2
 		return 4
