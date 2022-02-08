@@ -134,6 +134,13 @@ Success/failure assertions:
                        expect_failure_status 4 my_command || return 1
                        expect_failure_status 4 my_command arg1 arg2 || return 1
 
+   expect_exit      Test the failure of a command by running the command inside
+                    a subshell. Thus an \`exit\` command is also catched.
+                    Arguments: command.
+                    Example:
+                       expect_exit my_command || return 1
+                       expect_exit my_command arg1 arg2 || return 1
+
 Output assertions:
 
    expect_empty_output
@@ -823,6 +830,24 @@ function expect_success {
 	if [[ $? -gt 0 ]] ; then
 		print_call_stack >&2
 		echo "Command \"$cmd\" failed." >&2
+		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect exit {{{2
+################################################################
+
+function expect_exit {
+
+	local cmd="$*"
+
+	( "$@" >&2 )
+
+	if [ $? -eq 0 ] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" was successful, but expected failure." >&2
 		return 1
 	fi
 

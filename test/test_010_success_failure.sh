@@ -29,3 +29,7 @@ function cmd_that_fails {
 function test_failure_status {
 	expect_failure_status 5 cmd_that_fails 5 || return 1
 }
+
+function test_exit {
+	expect_exit exit 1 || return 1
+}
