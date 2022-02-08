@@ -796,7 +796,7 @@ function expect_success_in_n_tries {
 
 	# Try to run the command
 	for ((i = 0 ; i < n ; ++i)) ; do
-		( "$@" >&2 )
+		"$@" >&2
 		err=$?
 		[[ $err == 0 ]] && break
 	done
@@ -818,7 +818,7 @@ function expect_success {
 
 	local cmd="$*"
 
-	( "$@" >&2 )
+	"$@" >&2
 
 	if [[ $? -gt 0 ]] ; then
 		print_call_stack >&2
@@ -836,7 +836,7 @@ function expect_failure {
 
 	local cmd="$*"
 
-	( "$@" >&2 )
+	"$@" >&2
 
 	if [ $? -eq 0 ] ; then
 		print_call_stack >&2
@@ -856,7 +856,7 @@ function expect_failure_status {
 	shift
 	local cmd="$*"
 
-	( "$@" >&2 )
+	"$@" >&2
 	local actual_status=$?
 
 	if [[ $actual_status -eq 0 ]] ; then
@@ -884,7 +884,7 @@ function expect_empty_output {
 	local output=
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 
 	output=$(cat "$tmpfile")
@@ -912,7 +912,7 @@ function expect_non_empty_output {
 	local empty=
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 
 	[[ -s "$tmpfile" ]] || empty=$YES
@@ -942,7 +942,7 @@ function _expect_output_op {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 	local output=$(cat "$tmpfile")
 	rm "$tmpfile"
@@ -1004,7 +1004,7 @@ function _expect_output_esc_op {
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 	local tmpfile2=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 
 	echo -ne "$expected_output" >"$tmpfile2"
@@ -1058,7 +1058,7 @@ function expect_output_nlines_eq {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 
 	local nlines=$(awk 'END { print NR }' "$tmpfile")
@@ -1087,7 +1087,7 @@ function expect_output_nlines_ge {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	( "$@" >"$tmpfile" )
+	"$@" >"$tmpfile"
 	local status=$?
 
 	local nlines=$(wc -l <"$tmpfile")
