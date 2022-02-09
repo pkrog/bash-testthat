@@ -135,11 +135,22 @@ Success/failure assertions:
                        expect_failure_status 4 my_command arg1 arg2 || return 1
 
    expect_exit      Test the failure of a command by running the command inside
-                    a subshell. Thus an \`exit\` command is also catched.
+                    a subshell. Thus you can test a call to a function that
+                    call the \`exit\` command.
                     Arguments: command.
                     Example:
                        expect_exit my_command || return 1
                        expect_exit my_command arg1 arg2 || return 1
+
+   expect_exit_status
+                    Test that a command fails and return a precise status value
+                    by running the command inside a subshell. Thus you can test
+                    a call to a function that call the \`exit\` command.
+                    Arg. 1: Expected status number.
+                    Remaining arguments: command.
+                    Example:
+                       expect_exit_status 2 my_command || return 1
+                       expect_exit_status 0 my_command arg1 arg2 || return 1
 
 Output assertions:
 
@@ -849,6 +860,28 @@ function expect_exit {
 		print_call_stack >&2
 		echo "Command \"$cmd\" was successful, but expected failure." >&2
 		return 1
+	fi
+
+	echo -n .
+}
+
+# Expect exit status {{{2
+################################################################
+
+function expect_exit_status {
+
+	local expected_status="$1"
+	shift
+	local cmd="$*"
+
+	( "$@" >&2 )
+	local actual_status=$?
+
+	if [[ $actual_status -ne $expected_status ]] ; then
+		print_call_stack >&2
+		echo "Command \"$cmd\" failed with status $actual_status, but " \
+			"expected status $expected_status." >&2
+		return 2
 	fi
 
 	echo -n .

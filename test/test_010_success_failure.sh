@@ -31,5 +31,11 @@ function test_failure_status {
 }
 
 function test_exit {
-	expect_exit exit 1 || return 1
+	expect_failure expect_exit exit 0 || return 1
+	expect_success expect_exit exit 1 || return 1
+	expect_success expect_exit exit 2 || return 1
+	expect_success expect_exit_status 0 exit 0 || return 1
+	expect_success expect_exit_status 1 exit 1 || return 1
+	expect_success expect_exit_status 2 exit 2 || return 1
+	expect_failure expect_exit_status 1 exit 0 || return 1
 }
