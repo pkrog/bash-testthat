@@ -696,7 +696,8 @@ function test_that {
 
 	# Run test
 	g_fcts_run_in_test_file+=("$test_fct")
-	$test_fct $params 2>"$tmp_stderr_file"
+	( $test_fct $params 2>"$tmp_stderr_file" ) # Run in a subshell to catch exit
+	                                           # interruptions.
 	exit_code=$?
 
 	# Set message
