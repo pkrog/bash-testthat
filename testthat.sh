@@ -677,36 +677,39 @@ finalize_tests() {
 
 function test_that {
 
-	local msg="$1"
-	local test_fct="$2"
+	g_msg="$1"
+	g_test_fct="$2"
 	shift 2
 	local params="$*"
-	local tmp_stderr_file=$(mktemp -t testthat-stderr.XXXXXX)
+	g_tmp_stderr_file=$(mktemp -t testthat-stderr.XXXXXX)
 
 	# Filtering
-	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$test_fct,"* ]] ; then
+	if [[ -n $TEST_THAT_FCT && ",$TEST_THAT_FCT," != *",$g_test_fct,"* ]] ; then
 		return 0
 	fi
-	if [[ -n $TEST_THAT_NO_FCT && ",$TEST_THAT_NO_FCT," == *",$test_fct,"* ]] ; then
+	if [[ -n $TEST_THAT_NO_FCT && ",$TEST_THAT_NO_FCT," == *",$g_test_fct,"* ]] ; then
 		return 0
 	fi
 
 	# Run test
-	g_fcts_run_in_test_file+=("$test_fct")
-	$test_fct $params 2>"$tmp_stderr_file"
+	g_fcts_run_in_test_file+=("$g_test_fct")
+	# TODO The test function may throw an EXIT interrupt, we must catch it.
+	# XXX ISSUE If we catch with a trap a function, how to continue control
+	# flow from where test_that was called?
+	$g_test_fct $params 2>"$g_tmp_stderr_file"
 	exit_code=$?
 
 	# Set message
-	[[ -n $msg ]] || msg="Tests pass in function $test_fct"
+	[[ -n $g_msg ]] || g_msg="Tests pass in function $g_test_fct"
 
 	# Print stderr now
-	[[ $PRINT == $YES && -f $tmp_stderr_file ]] && cat $tmp_stderr_file
+	[[ $PRINT == $YES && -f $g_tmp_stderr_file ]] && cat $g_tmp_stderr_file
 
 	# Failure
 	if [ $exit_code -gt 0 ] ; then
 
 		# Increment error number
-		((ERR_NUMBER=ERR_NUMBER+1))
+		((++ERR_NUMBER))
 
 		# Print error number
 		if [[ ERR_NUMBER -lt 16 ]] ; then
@@ -717,12 +720,12 @@ function test_that {
 
 		# Print error now
 		if [[ $REPORT == $ON_THE_SPOT ]] ; then
-			print_error $ERR_NUMBER "$msg" "$tmp_output_file"
+			print_error $ERR_NUMBER "$g_msg" "$g_tmp_stderr_file"
 
 		# Store error message for later
 		else
-			g_err_msgs+=("$msg")
-			g_err_stderr_files+=("$tmp_stderr_file")
+			g_err_msgs+=("$g_msg")
+			g_err_stderr_files+=("$g_tmp_stderr_file")
 		fi
 
 		# Quit on first error
@@ -730,7 +733,7 @@ function test_that {
 
 	# Success
 	else
-		rm $tmp_stderr_file
+		rm $g_tmp_stderr_file
 	fi
 }
 
@@ -794,8 +797,8 @@ output_progress() {
 
 function print_call_stack {
 
-	local frame=1
-	while caller $frame ; do
+	local frame=0
+	while caller $frame >&2 ; do
 		((frame++));
 	done
 }
@@ -822,7 +825,7 @@ function expect_success_in_n_tries {
 	# Failure
 	if [[ $err -gt 0 ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" failed after $n tries." >&2
+		echo "Command \"$cmd\" failed $n times." >&2
 		return 1
 	fi
 
@@ -837,10 +840,11 @@ function expect_success {
 	local cmd="$*"
 
 	"$@" >&2
+	local status=$?
 
-	if [[ $? -gt 0 ]] ; then
+	if [[ $status -gt 0 ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" failed." >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
 		return 1
 	fi
 
@@ -858,7 +862,7 @@ function expect_exit {
 
 	if [ $? -eq 0 ] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure." >&2
+		echo "Command \"$cmd\" was successful while expecting failure." >&2
 		return 1
 	fi
 
@@ -898,7 +902,7 @@ function expect_failure {
 
 	if [ $? -eq 0 ] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure." >&2
+		echo "Command \"$cmd\" was successful while expecting failure." >&2
 		return 1
 	fi
 
@@ -919,11 +923,13 @@ function expect_failure_status {
 
 	if [[ $actual_status -eq 0 ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure with status $expected_status." >&2
+		echo "Command \"$cmd\" was successful, but expected failure with " \
+			"status $expected_status." >&2
 		return 1
 	elif [[ $actual_status -ne $expected_status ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" failed with status $actual_status, but expected status $expected_status." >&2
+		echo "Command \"$cmd\" failed with status $actual_status, but " \
+			"expected status $expected_status." >&2
 		return 2
 	fi
 
