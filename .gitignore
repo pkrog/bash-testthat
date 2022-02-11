@@ -1,3 +1,4 @@
 .*.swp
 .swp
 test/workspace
+test/output
