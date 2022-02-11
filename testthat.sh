@@ -126,13 +126,13 @@ Success/failure assertions:
                        expect_failure my_command || return 1
                        expect_failure my_command arg1 arg2 || return 1
 
-   expect_failure_status
-                    Test that a command fails and return a precise status value.
+   expect_status    Test that a command fails and return a precise status value.
                     Arg. 1: Expected status number.
                     Remaining arguments: command.
                     Example:
-                       expect_failure_status 4 my_command || return 1
-                       expect_failure_status 4 my_command arg1 arg2 || return 1
+                       expect_status 0 my_command || return 1
+                       expect_status 4 my_command || return 1
+                       expect_status 4 my_command arg1 arg2 || return 1
 
    expect_exit      Test the failure of a command by running the command inside
                     a subshell. Thus you can test a call to a function that
@@ -503,6 +503,9 @@ CSV assertions:
 
 DEPRECATED ASSERTIONS:
 
+   expect_failure_status
+                       Replace by "expect_status".
+
    expect_file_exists  Replaced by "expect_file".
 
    expect_success_after_n_tries
@@ -693,7 +696,8 @@ function test_that {
 
 	# Run test
 	g_fcts_run_in_test_file+=("$test_fct")
-	$test_fct $params 2>"$tmp_stderr_file"
+	( $test_fct $params 2>"$tmp_stderr_file" ) # Run in a subshell to catch exit
+	                                           # interruptions.
 	exit_code=$?
 
 	# Set message
@@ -706,7 +710,7 @@ function test_that {
 	if [ $exit_code -gt 0 ] ; then
 
 		# Increment error number
-		((ERR_NUMBER=ERR_NUMBER+1))
+		((++ERR_NUMBER))
 
 		# Print error number
 		if [[ ERR_NUMBER -lt 16 ]] ; then
@@ -717,7 +721,7 @@ function test_that {
 
 		# Print error now
 		if [[ $REPORT == $ON_THE_SPOT ]] ; then
-			print_error $ERR_NUMBER "$msg" "$tmp_output_file"
+			print_error $ERR_NUMBER "$msg" "$tmp_stderr_file"
 
 		# Store error message for later
 		else
@@ -794,8 +798,8 @@ output_progress() {
 
 function print_call_stack {
 
-	local frame=1
-	while caller $frame ; do
+	local frame=0
+	while caller $frame >&2 ; do
 		((frame++));
 	done
 }
@@ -814,7 +818,7 @@ function expect_success_in_n_tries {
 
 	# Try to run the command
 	for ((i = 0 ; i < n ; ++i)) ; do
-		"$@" >&2
+		( "$@" >&2 )
 		err=$?
 		[[ $err == 0 ]] && break
 	done
@@ -822,7 +826,7 @@ function expect_success_in_n_tries {
 	# Failure
 	if [[ $err -gt 0 ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" failed after $n tries." >&2
+		echo "Command \"$cmd\" failed $n times." >&2
 		return 1
 	fi
 
@@ -836,21 +840,22 @@ function expect_success {
 
 	local cmd="$*"
 
-	"$@" >&2
+	( "$@" >&2 )
+	local status=$?
 
-	if [[ $? -gt 0 ]] ; then
+	if [[ $status -gt 0 ]] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" failed." >&2
+		echo "Command \"$cmd\" failed with status $status." >&2
 		return 1
 	fi
 
 	echo -n .
 }
 
-# Expect exit {{{2
+# Expect failure {{{2
 ################################################################
 
-function expect_exit {
+function expect_failure {
 
 	local cmd="$*"
 
@@ -858,17 +863,17 @@ function expect_exit {
 
 	if [ $? -eq 0 ] ; then
 		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure." >&2
+		echo "Command \"$cmd\" was successful while expecting failure." >&2
 		return 1
 	fi
 
 	echo -n .
 }
 
-# Expect exit status {{{2
+# Expect status {{{2
 ################################################################
 
-function expect_exit_status {
+function expect_status {
 
 	local expected_status="$1"
 	shift
@@ -887,49 +892,6 @@ function expect_exit_status {
 	echo -n .
 }
 
-# Expect failure {{{2
-################################################################
-
-function expect_failure {
-
-	local cmd="$*"
-
-	"$@" >&2
-
-	if [ $? -eq 0 ] ; then
-		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure." >&2
-		return 1
-	fi
-
-	echo -n .
-}
-
-# Expect failure status {{{2
-################################################################
-
-function expect_failure_status {
-
-	local expected_status="$1"
-	shift
-	local cmd="$*"
-
-	"$@" >&2
-	local actual_status=$?
-
-	if [[ $actual_status -eq 0 ]] ; then
-		print_call_stack >&2
-		echo "Command \"$cmd\" was successful, but expected failure with status $expected_status." >&2
-		return 1
-	elif [[ $actual_status -ne $expected_status ]] ; then
-		print_call_stack >&2
-		echo "Command \"$cmd\" failed with status $actual_status, but expected status $expected_status." >&2
-		return 2
-	fi
-
-	echo -n .
-}
-
 # Output assertions {{{1
 ################################################################
 
@@ -942,7 +904,7 @@ function expect_empty_output {
 	local output=
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 
 	output=$(cat "$tmpfile")
@@ -970,7 +932,7 @@ function expect_non_empty_output {
 	local empty=
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 
 	[[ -s "$tmpfile" ]] || empty=$YES
@@ -1000,7 +962,7 @@ function _expect_output_op {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 	local output=$(cat "$tmpfile")
 	rm "$tmpfile"
@@ -1062,7 +1024,7 @@ function _expect_output_esc_op {
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 	local tmpfile2=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 
 	echo -ne "$expected_output" >"$tmpfile2"
@@ -1116,7 +1078,7 @@ function expect_output_nlines_eq {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 
 	local nlines=$(awk 'END { print NR }' "$tmpfile")
@@ -1145,7 +1107,7 @@ function expect_output_nlines_ge {
 	local cmd="$*"
 	local tmpfile=$(mktemp -t $PROGNAME.XXXXXX)
 
-	"$@" >"$tmpfile"
+	( "$@" >"$tmpfile" )
 	local status=$?
 
 	local nlines=$(wc -l <"$tmpfile")
@@ -1925,6 +1887,14 @@ function expect_same_folders {
 
 # Deprecated {{{1
 ################################################################
+
+# Expect failure status {{{2
+################################################################
+
+function expect_failure_status { # DEPRECATED
+	deprecated "expect_status"
+	expect_status "$@" || return 1 
+}
 
 # CSV expect same col_names {{{2
 ################################################################
