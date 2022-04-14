@@ -24,7 +24,7 @@ function test_expect_file {
 
 function test_expect_symlink {
 
-	local file=$(realpath "$WORK_DIR/afile")
+	local file="$WORK_DIR/afile"
 	local symlink="$WORK_DIR/asymkink"
 	rm -f "$symlink" "$file"
 
@@ -33,7 +33,7 @@ function test_expect_symlink {
 	touch "$file"
 	expect_success expect_file "$file" "Message" || return 1
 	expect_failure expect_symlink "file" "a_file_that_does_not_exist" "Message" || return 1
-	ln -sf "$file" "$symlink"
+	ln -sf $(realpath "$file") "$symlink"
 	expect_failure expect_symlink "$symlink" "a_file_that_does_not_exist" "Message" || return 1
 	expect_success expect_symlink "$symlink" "$file" "Message" || return 1
 	rm "$symlink"
