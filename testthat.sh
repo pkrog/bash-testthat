@@ -810,7 +810,7 @@ function expect_failure {
 
 	( "$@" >&2 )
 
-	if [ $? -eq 0 ] ; then
+	if [[ $? -eq 0 ]] ; then
 		print_call_stack >&2
 		echo "Command \"$cmd\" was successful while expecting failure." >&2
 		return 1
