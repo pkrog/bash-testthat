@@ -1,8 +1,4 @@
 #!/bin/bash
-# vi: fdm=marker
-
-# Constants {{{1
-################################################################
 
 PROGNAME=$(basename $0)
 VERSION=1.3.1
@@ -12,25 +8,19 @@ AT_THE_END=at.the.end
 INCLUDE_FCTS=${TESTTHAT_INCLUDE_FCTS:-}
 INCLUDE_FILES=${TESTTHAT_INCLUDE_FILES:-}
 
-# Global variables {{{1
-################################################################
-
 DEBUG=0
 TOTEST=
 NB_TEST_CONTEXT=0
 ERR_NUMBER=0
 PRINT=
 FILE_PATTERN='[Tt][Ee][Ss][Tt][-._].*\.sh'
-FCT_PREFIX='[Tt][Ee][Ss][Tt]_\?'
+FCT_PREFIX='[Tt][Ee][Ss][Tt]_?'
 AUTORUN=$YES
 REPORT=$AT_THE_END
 QUIT_ON_FIRST_ERROR=
 declare -a g_err_msgs=()
 declare -a g_err_stderr_files=()
 declare -a g_fcts_run_in_test_file=()
-
-# Print help {{{1
-################################################################
 
 function print_help {
 	cat <<END_HELP
@@ -42,6 +32,8 @@ The folders are searched for files matching 'test-*.sh' pattern.
 You can use the environment variables TEST_THAT_FCT and TEST_THAT_NO_FCT to restrict the test functions that are run. Just set this variable to the list of functions you want to run or not run (separated by commas).
 
 OPTIONS:
+
+       --dryrun        List what tests would be run but do not execute anything.
 
    -f, --file-pattern  Redefine the regular expression for filtering test files
                        in folders. Default is "$FILE_PATTERN".
@@ -60,7 +52,7 @@ OPTIONS:
                        comma separated list of functions names. Can be set also
                        through TESTTHAT_INCLUDE_FCTS environment variable.
 
-   --j, --include-files <file1, file2, ...>
+   -j, --include-files <file1, file2, ...>
                        Set a selection of test files to run. Only those test
                        files will be run, if they exist. The value is a
                        comma separated list of files names. Can be set also
@@ -533,9 +525,6 @@ GLOSSARY
 END_HELP
 }
 
-# Error {{{1
-################################################################
-
 function error {
 
 	local msg=$1
@@ -545,9 +534,6 @@ function error {
 	exit 1
 }
 
-# Debug {{{1
-################################################################
-
 function debug {
 
 	local dbglvl=$1
@@ -556,16 +542,10 @@ function debug {
 	[ $DEBUG -ge $dbglvl ] && echo "[DEBUG] $dbgmsg" >&2
 }
 
-# Deprecated {{{1
-################################################################
-
 function deprecated {
 	local new_fct="$1"
 	debug 1 "Deprecated function. Use $new_fct() instead."
 }
-
-# Read args {{{1
-################################################################
 
 function read_args {
 
@@ -574,6 +554,7 @@ function read_args {
 	# Read options
 	while true ; do
 		case $1 in
+			--dryrun)           DRYRUN=1 ;;
 			-f|--file-pattern)  FILE_PATTERN="$2" ; shift ;;
 			-g|--debug)         DEBUG=$((DEBUG + 1)) ;;
 			-h|--help)          print_help ; exit 0 ;;
@@ -617,31 +598,23 @@ function read_args {
 	debug 1 "REPORT=$REPORT"
 }
 
-
-# Join by {{{1
-################################################################
-
 function join_by {
 	local IFS="$1"
 	shift
 	echo "$*"
 }
-# Test context {{{1
-################################################################
 
 function test_context {
 
 	local msg=$1
 
-	[[ $NB_TEST_CONTEXT -gt 0 ]] && echo
+	if [[ -z $DRYRUN ]] ; then
 
-	echo -n "$msg "
-
-	((NB_TEST_CONTEXT=NB_TEST_CONTEXT+1))
+		[[ $NB_TEST_CONTEXT -gt 0 ]] && echo
+		echo -n "$msg "
+		((++NB_TEST_CONTEXT))
+	fi
 }
-
-# Print error {{{1
-################################################################
 
 print_error() {
 	n=$1
@@ -660,9 +633,6 @@ print_error() {
 	echo '----------------------------------------------------------------'
 }
 
-# Finalize tests {{{1
-################################################################
-
 finalize_tests() {
 
 	# Print new line
@@ -674,9 +644,6 @@ finalize_tests() {
 	# Exit
 	exit $ERR_NUMBER
 }
-
-# Test that {{{1
-################################################################
 
 function test_that {
 
@@ -738,19 +705,18 @@ function test_that {
 	fi
 }
 
-# Run test file {{{1
-################################################################################
-
 function run_test_file {
 
 	local file="$1"
+
+	[[ -z $DRYRUN ]] || echo "Test functions found in file \"$file\":"
 
 	g_fcts_run_in_test_file=()
 	source "$file"
 
 	# Run all test_.* functions not run explicitly by test_that
 	if [[ $AUTORUN == $YES ]] ; then
-		for fct in $(grep '^ *\(function \+'$FCT_PREFIX'[^ ]\+\|'$FCT_PREFIX'[^ ]\+()\) *{' "$file" | sed 's/^ *\(function \+\)\?\('$FCT_PREFIX'[^ {(]\+\).*$/\2/') ; do
+		for fct in $(grep -E '^ *function +'$FCT_PREFIX'[^ ]+|'$FCT_PREFIX'[^ ]+\(\) *\{' "$file" | sed -E 's/^ *(function +)?('$FCT_PREFIX'[^ {(]+).*$/\2/') ; do
 
 			# Ignore some reserved names
 			[[ $fct == test_context || $fct == test_that ]] && continue
@@ -759,13 +725,15 @@ function run_test_file {
 			[[ -z $INCLUDE_FCTS || ",$INCLUDE_FCTS," == *",$fct,"* ]] || continue
 
 			# Run function
-			[[ " ${g_fcts_run_in_test_file[*]} " == *" $fct "* ]] || test_that "" $fct
+			[[ " ${g_fcts_run_in_test_file[*]} " == *" $fct "* ]] && continue
+			if [[ -n $DRYRUN ]] ; then
+				echo "  $fct"
+			else
+				test_that "" $fct
+			fi
 		done
 	fi
 }
-
-# Print end report {{{1
-################################################################
 
 function print_end_report {
 
@@ -780,21 +748,14 @@ function print_end_report {
 	fi
 }
 
-# Output progress {{{1
-# Output the progress of a command, by taking both stdout and stderr of the
-# command and replace each line by a dot character.
-# This function is useful while some part of the test code takes much time
-# and use does not get any feedback.
-# It is also particularly essential with Travis-CI, which aborts the test
-# if no output has been seen for the last 10 minutes.
-################################################################
-
 output_progress() {
+	# Output the progress of a command, by taking both stdout and stderr of the
+	# command and replace each line by a dot character.
+	# This function is useful while some part of the test code takes much time
+	# and use does not get any feedback.
+	# It is also particularly essential with Travis-CI, which aborts the test
 	"$@" 2>&1 | while read line ; do echo -n . ; done
 }
-
-# Print call stack {{{1
-################################################################
 
 function print_call_stack {
 
@@ -803,12 +764,6 @@ function print_call_stack {
 		((frame++));
 	done
 }
-
-# Success/failure assertions {{{1
-################################################################
-
-# Expect success in n tries {{{2
-################################################################
 
 function expect_success_in_n_tries {
 
@@ -833,9 +788,6 @@ function expect_success_in_n_tries {
 	echo -n .
 }
 
-# Expect success {{{2
-################################################################
-
 function expect_success {
 
 	local cmd="$*"
@@ -852,9 +804,6 @@ function expect_success {
 	echo -n .
 }
 
-# Expect failure {{{2
-################################################################
-
 function expect_failure {
 
 	local cmd="$*"
@@ -869,9 +818,6 @@ function expect_failure {
 
 	echo -n .
 }
-
-# Expect status {{{2
-################################################################
 
 function expect_status {
 
@@ -891,12 +837,6 @@ function expect_status {
 
 	echo -n .
 }
-
-# Output assertions {{{1
-################################################################
-
-## Expect empty output {{{2
-################################################################
 
 function expect_empty_output {
 
@@ -923,9 +863,6 @@ function expect_empty_output {
 	echo -n .
 }
 
-## Expect non empty output {{{2
-################################################################
-
 function expect_non_empty_output {
 
 	local cmd="$*"
@@ -950,9 +887,6 @@ function expect_non_empty_output {
 
 	echo -n .
 }
-
-## Expect output with operator {{{2
-################################################################
 
 function _expect_output_op {
 
@@ -988,32 +922,20 @@ function _expect_output_op {
 	echo -n .
 }
 
-## Expect output equals to {{{2
-################################################################
-
 function expect_output_eq {
 	_expect_output_op 'eq' "$@"
 	return $?
 }
-
-## Expect output matches regex {{{2
-################################################################
 
 function expect_output_re {
 	_expect_output_op 're' "$@"
 	return $?
 }
 
-## Expect output different from {{{2
-################################################################
-
 function expect_output_ne {
 	_expect_output_op 'ne' "$@"
 	return $?
 }
-
-## Expect output with operator, using escape chars {{{2
-################################################################
 
 function _expect_output_esc_op {
 
@@ -1052,24 +974,15 @@ function _expect_output_esc_op {
 	echo -n .
 }
 
-## Expect output different from, using escape chars {{{2
-################################################################
-
 function expect_output_esc_ne {
 	_expect_output_esc_op 'ne' "$@"
 	return $?
 }
 
-## Expect output equals to, using escape chars {{{2
-################################################################
-
 function expect_output_esc_eq {
 	_expect_output_esc_op 'eq' "$@"
 	return $?
 }
-
-## Expect output nlines equals to {{{2
-################################################################
 
 function expect_output_nlines_eq {
 
@@ -1097,9 +1010,6 @@ function expect_output_nlines_eq {
 	echo -n .
 }
 
-## Expect output nlines greater than or equal to {{{2
-################################################################
-
 function expect_output_nlines_ge {
 
 	local n="$1"
@@ -1126,12 +1036,6 @@ function expect_output_nlines_ge {
 	echo -n .
 }
 
-# CSV assertions {{{1
-################################################################
-
-# CSV get column index  {{{2
-################################################################
-
 function csv_get_col_index {
 
 	local file=$1
@@ -1147,9 +1051,6 @@ function csv_get_col_index {
 	echo $n
 }
 
-# CSV count values {{{2
-################################################################
-
 function csv_count_values {
 
 	local file=$1
@@ -1163,9 +1064,6 @@ function csv_count_values {
 	echo $nb_values
 }
 
-# CSV get number of columns {{{2
-################################################################
-
 function csv_get_nb_cols {
 
 	local file=$1
@@ -1173,9 +1071,6 @@ function csv_get_nb_cols {
 
 	echo $(head -n 1 "$file" | tr "$sep" "\n" | wc -l)
 }
-
-# CSV get column names {{{2
-################################################################
 
 function csv_get_col_names {
 
@@ -1199,9 +1094,6 @@ function csv_get_col_names {
 	echo $cols
 }
 
-# CSV get value {{{2
-################################################################
-
 function csv_get_val {
 
 	local file=$1
@@ -1215,9 +1107,6 @@ function csv_get_val {
 
 	echo $val
 }
-
-# Expect CSV has columns {{{2
-################################################################
 
 function expect_csv_has_columns {
 
@@ -1241,9 +1130,6 @@ function expect_csv_has_columns {
 	echo -n .
 }
 
-# Expect CSV not has columns {{{2
-################################################################
-
 function expect_csv_not_has_columns {
 
 	local file=$1
@@ -1266,9 +1152,6 @@ function expect_csv_not_has_columns {
 	echo -n .
 }
 
-# Expect CSV identical column values {{{2
-################################################################
-
 function expect_csv_identical_col_values {
 
 	local col=$1
@@ -1289,9 +1172,6 @@ function expect_csv_identical_col_values {
 		return 1
 	fi
 }
-
-# CSV expect same col_names {{{2
-################################################################
 
 function csv_expect_same_col_names {
 
@@ -1315,9 +1195,6 @@ function csv_expect_same_col_names {
 	echo -n .
 }
 
-# Expect CSV float column equals {{{2
-################################################################
-
 function expect_csv_float_col_equals {
 
 	local file=$1
@@ -1331,12 +1208,6 @@ function expect_csv_float_col_equals {
 
 	[[ $ident -eq 1 ]] || return 1
 }
-
-# File assertions {{{1
-################################################################
-
-# Expect empty file {{{2
-################################################################
 
 function expect_empty_file {
 
@@ -1352,9 +1223,6 @@ function expect_empty_file {
 	echo -n .
 }
 
-# Expect non empty file {{{2
-################################################################
-
 function expect_non_empty_file {
 
 	local file="$1"
@@ -1368,9 +1236,6 @@ function expect_non_empty_file {
 
 	echo -n .
 }
-
-# Expect same files {{{2
-################################################################
 
 function expect_same_files {
 
@@ -1389,9 +1254,6 @@ function expect_same_files {
 	echo -n .
 }
 
-# Get number of rows {{{2
-################################################################
-
 function get_nb_rows {
 
 	local file=$1
@@ -1407,9 +1269,6 @@ function get_nb_rows {
 	echo $n
 }
 
-# Expect same number of rows {{{2
-################################################################
-
 function expect_same_number_of_rows {
 
 	local file1=$1
@@ -1424,9 +1283,6 @@ function expect_same_number_of_rows {
 	echo -n .
 }
 
-# Expect no duplicated row {{{2
-################################################################
-
 function expect_no_duplicated_row {
 
 	local file=$1
@@ -1435,12 +1291,6 @@ function expect_no_duplicated_row {
 	n_uniq_rows=$(sort -u $file | wc -l)
 	[[ $nrows -eq $n_uniq_rows ]] || return 1
 }
-
-# String assertions {{{1
-################################################################
-
-# Expect string null {{{2
-################################################################
 
 function expect_str_null {
 
@@ -1456,9 +1306,6 @@ function expect_str_null {
 	echo -n .
 }
 
-# Expect string not null {{{2
-################################################################
-
 function expect_str_not_null {
 
 	local v=$1
@@ -1472,9 +1319,6 @@ function expect_str_not_null {
 
 	echo -n .
 }
-
-# Expect strings equal {{{2
-################################################################
 
 function expect_str_eq {
 
@@ -1491,9 +1335,6 @@ function expect_str_eq {
 	echo -n .
 }
 
-# Expect strings not equal {{{2
-################################################################
-
 function expect_str_ne {
 
 	local a=$1
@@ -1508,9 +1349,6 @@ function expect_str_ne {
 
 	echo -n .
 }
-
-# Expect string regexp {{{2
-################################################################
 
 function expect_str_re {
 
@@ -1528,12 +1366,6 @@ function expect_str_re {
 	echo -n .
 }
 
-# Numeric assertions {{{1
-################################################################
-
-# Expect numeric equal {{{2
-################################################################
-
 function expect_num_eq {
 
 	local a=$1
@@ -1548,9 +1380,6 @@ function expect_num_eq {
 
 	echo -n .
 }
-
-# Expect numeric not equal {{{2
-################################################################
 
 function expect_num_ne {
 
@@ -1567,9 +1396,6 @@ function expect_num_ne {
 	echo -n .
 }
 
-# Expect numeric lower or equal {{{2
-################################################################
-
 function expect_num_le {
 
 	local a=$1
@@ -1584,9 +1410,6 @@ function expect_num_le {
 
 	echo -n .
 }
-
-# Expect numeric greater than {{{2
-################################################################
 
 function expect_num_gt {
 
@@ -1603,12 +1426,6 @@ function expect_num_gt {
 	echo -n .
 }
 
-# Environment assertions {{{1
-################################################################
-
-# Expect defined env var {{{2
-################################################################
-
 function expect_def_env_var {
 
 	local varname="$1"
@@ -1622,12 +1439,6 @@ function expect_def_env_var {
 
 	echo -n .
 }
-
-# File system assertions {{{1
-################################################################
-
-# Expect no path {{{2
-################################################################
 
 function expect_no_path {
 
@@ -1643,9 +1454,6 @@ function expect_no_path {
 	echo -n .
 }
 
-# Expect folder {{{2
-################################################################
-
 function expect_folder {
 
 	local folder="$1"
@@ -1660,9 +1468,6 @@ function expect_folder {
 	echo -n .
 }
 
-# Expect file {{{2
-################################################################
-
 function expect_file {
 
 	local file="$1"
@@ -1676,9 +1481,6 @@ function expect_file {
 
 	echo -n .
 }
-
-# Expect symlink {{{2
-################################################################
 
 function expect_symlink {
 
@@ -1703,9 +1505,6 @@ function expect_symlink {
 	echo -n .
 }
 
-# Expect folder is writable {{{2
-################################################################
-
 function expect_folder_is_writable {
 
 	local folder="$1"
@@ -1721,9 +1520,6 @@ function expect_folder_is_writable {
 	unlink "$file"
 	echo -n .
 }
-
-# Expect other files in folder {{{2
-################################################################
 
 function expect_other_files_in_folder {
 
@@ -1745,9 +1541,6 @@ function expect_other_files_in_folder {
 	echo -n .
 }
 
-# Expect other files in tree {{{2
-################################################################
-
 function expect_other_files_in_tree {
 
 	local folder="$1"
@@ -1765,9 +1558,6 @@ function expect_other_files_in_tree {
 
 	echo -n .
 }
-
-# Expect no other files in tree {{{2
-################################################################
 
 function expect_no_other_files_in_tree {
 
@@ -1791,9 +1581,6 @@ function expect_no_other_files_in_tree {
 
 	echo -n .
 }
-
-# Expect no other files in folder {{{2
-################################################################
 
 function expect_no_other_files_in_folder {
 
@@ -1821,9 +1608,6 @@ function expect_no_other_files_in_folder {
 	echo -n .
 }
 
-# Expect files in tree {{{2
-################################################################
-
 function expect_files_in_tree {
 
 	local folder="$1"
@@ -1841,9 +1625,6 @@ function expect_files_in_tree {
 
 	echo -n .
 }
-
-# Expect files in folder {{{2
-################################################################
 
 function expect_files_in_folder {
 
@@ -1865,9 +1646,6 @@ function expect_files_in_folder {
 	echo -n .
 }
 
-# Expect same folders {{{2
-################################################################
-
 function expect_same_folders {
 
 	local folder1="$1"
@@ -1885,75 +1663,45 @@ function expect_same_folders {
 	echo -n .
 }
 
-# Deprecated {{{1
-################################################################
-
-# Expect failure status {{{2
-################################################################
-
 function expect_failure_status { # DEPRECATED
 	deprecated "expect_status"
 	expect_status "$@" || return 1 
 }
-
-# CSV expect same col_names {{{2
-################################################################
 
 function csv_expect_same_col_names { # DEPRECATED
 	deprecated "expect_csv_same_col_names"
 	expect_csv_same_col_names "$@" || return 1 
 }
 
-# CSV expect float column equals {{{2
-################################################################
-
 function csv_expect_float_col_equals { # DEPRECATED
 	deprecated "expect_csv_float_col_equals"
 	expect_csv_float_col_equals "$@" || return 1 
 }
-
-# CSV expect identical col values {{{2
-################################################################
 
 function csv_expect_identical_col_values { # DEPRECATED
 	deprecated "expect_csv_identical_col_values"
 	expect_csv_identical_col_values "$@" || return 1 
 }
 
-# CSV expect has columns {{{2
-################################################################
-
 function csv_expect_has_columns { # DEPRECATED
 	deprecated "expect_csv_has_columns"
 	expect_csv_has_columns "$@" || return 1 
 }
-
-# CSV expect not has columns {{{2
-################################################################
 
 function csv_expect_not_has_columns { # DEPRECATED
 	deprecated "expect_csv_not_has_columns"
 	expect_csv_not_has_columns "$@" || return 1 
 }
 
-# Expect success after n tries {{{2
-################################################################
-
 function expect_success_after_n_tries { # DEPRECATED
 	deprecated "expect_success_in_n_tries"
 	expect_success_in_n_tries "$@" || return 1
 }
 
-# Expect file exists {{{2
-################################################################
-
 function expect_file_exists { # DEPRECATED
 	deprecated "expect_file"
 	expect_file "$@" || return 1
 }
-
-# Run tests {{{1
-################################################################
 
 function run_tests {
 
@@ -1986,14 +1734,17 @@ function run_tests {
 	done
 }
 
-# Main {{{1
-################################################################
+function main {
 
-# Read arguments
-read_args "$@"
+	# Read arguments
+	read_args "$@"
 
-# Run
-run_tests
+	# Run
+	run_tests
 
-# Finalize
-finalize_tests
+	# Finalize
+	finalize_tests
+}
+
+main "$@"
+exit 0
