@@ -1493,8 +1493,8 @@ function expect_symlink {
 		echo "\"$symlink\" does not exist or is not a symbolic link. $msg" >&2
 		return 1
 	else
-		local path=$(realpath "$symlink")
-		local real_pointed_path=$(realpath "$pointed_path")
+		local path=$(readlink "$symlink")
+		local real_pointed_path=$(readlink -f "$pointed_path")
 		if [[ $path != $real_pointed_path ]] ; then
 			print_call_stack >&2
 			echo "Symbolic link \"$symlink\" does not point to \"$pointed_path\" but to \"$path\". $msg" >&2
