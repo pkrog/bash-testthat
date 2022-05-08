@@ -3,6 +3,8 @@
 [![Build Status](https://travis-ci.org/pkrog/bash-testthat.svg?branch=master)](https://travis-ci.org/pkrog/bash-testthat)
 [![codecov](https://codecov.io/gh/pkrog/bash-testthat/branch/master/graph/badge.svg?token=4QNHAHECYQ)](https://codecov.io/gh/pkrog/bash-testthat)
 
+**DEPRECATED** This package has been replaced by [bash-lib](https://github.com/pkrog/bash-lib)'s `testthat`.
+
 A test framework for bash, in the style of R package [testthat](https://github.com/hadley/testthat).
 It is designed to help you write tests for a command line program, written in any language, or to test bash functions.
 
